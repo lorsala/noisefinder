@@ -1,6 +1,3 @@
-# CPSDstats.py
-# L Sala, July25
-
 import numpy as np
 from . import CPSDstats_methods
 from . import specwindows

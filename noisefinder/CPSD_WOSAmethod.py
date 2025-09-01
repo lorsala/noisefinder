@@ -1,6 +1,3 @@
-# CPSD_WOSAmethod.py
-# L Sala, July25
-
 import numpy as np
 from .CPSDstats import CPSDstats,_getcohere,_getR2
 from . import specwindows

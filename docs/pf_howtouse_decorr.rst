@@ -4,7 +4,7 @@ How to use (decorr)
 General usage
 -------------
 
-:mod:`noisefinder` allows the user to perform *noise projection*, or
+:mod:`noisefinder` can also perform *noise projection*, or
 *decorrelation*, as we describe in the reference paper. Let’s work out a
 minimal example.
 

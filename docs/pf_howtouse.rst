@@ -1,34 +1,25 @@
 How to use
 ==========
 
-Installation
-------------
-
-Install using `pip`
-
-::
-
-   pip install gitblabla
-
 Calculate CPSDs and statistics
 ------------------------------
 
 | Generally, calculate the CPSD matrix of a few time series
   (synchronously sampled) with the class
-  :class:`noisefinder.CPSDstats`.
-| Note that :class:`noisefinder.CPSDstats` does not include a
+  :class:`noisefinder.CPSDstats`. However, the user should *never* use directly :class:`noisefinder.CPSDstats`.
+| The reason is that :class:`noisefinder.CPSDstats` does not include a
   *frequency scheme*, i.e., a set of frequencies, stretch length, and
   Fourier index at which to calculate the CPSDs.
-| The experienced user can create their own classes, which inherit from
-  :class:`noisefinder.CPSDstats` and use it for CPSD evaluation and
-  statistics.
-| In `noisefinder`, we provide useful frequency schemes: - The *LPF
+| In `noisefinder`, we provide a few useful frequency schemes: - The *LPF
   frequency scheme*, :class:`noisefinder.CPSD_LPFmethod`, with
   logarithmic-spaced frequencies and stretch lengths, and constant
   Fourier index (see :class:`noisefinder.CPSD_LPFmethod` for details).
   - The *WOSA (Welch) frequency scheme*,
   :class:`noisefinder.CPSD_WOSAmethod`, with linearly-spaced
   frequencies, and a single stretch length.
+| The experienced user can create their own classes, which inherit from
+  :class:`noisefinder.CPSDstats` and use it for CPSD evaluation and
+  statistics.
 
 For this example, we implement the LPF method, and a give an
 introductory example.
@@ -140,29 +131,40 @@ Only calculate CPSD statistics
 .. code:: ipython3
 
     from noisefinder.CPSDstats import CPSDstats_methods as cpm
-    
-    PSDpp = cpm.PSDposterior(expPSD=15.0,navs=8)     # PSD posterior, as frozen scipy.stats, of the PSD posterior 
+
+    PSDfr = cpm.PSDposterior(expPSD=15.0,navs=8)     # PSD posterior, as frozen scipy.stats, of the PSD posterior 
+    PSDth = np.linspace(0,60,300)
+    PSDpp = PSDfr.pdf(PSDth) # PSD posterior, evaluated at PSDth
     PSDCI = cpm.PSDpostCI(expPSD=15.0,navs=8,c=0.68) # PSD posterior confidence interval at given confidence level
-    
-    rho2th=np.linspace(0,1,100)
-    rho2pp = cpm.rho2posterior(rho2th=rho2th,rho2exp=0.5,navs=8) # MSC posterior evaluated on the rho2th axis 
-    rho2CI = cpm.rho2postCI(r2e=0.5,navs=8,c=0.68) # MSC posterior confidence interval at given confidence level
-    
-    R2th=np.linspace(0,1,100)
-    R2pp = cpm.R2posterior(R2th=R2th,R2exp=0.1,navs=8,p=4) # R2 posterior, evaluated on the R2th axis. p is the number of timeseries
-    R2CI = cpm.R2postCI(R2e=0.1,navs=8,p=4,c=0.68) # R2 posterior confidence interval at given confidence level
-    
-    PSDaxis = np.linspace(0,60,100)
-    fig,ax=plt.subplots(figsize=(6,3))
-    ax.plot(PSDaxis,PSDpp.pdf(PSDaxis))
+
+    rho2th=np.linspace(0,1,300)
+    r2e=0.5; navs=14; R2e=0.1; 
+    rho2pp = cpm.rho2posterior(rho2th=rho2th,rho2exp=r2e,navs=navs) # MSC posterior evaluated on the rho2th axis 
+    rho2CI = cpm.rho2postCI(r2e=r2e,navs=navs,c=0.68) # MSC posterior confidence interval at given confidence level
+
+    R2th=np.linspace(0,1,300)
+    R2pp = cpm.R2posterior(R2th=R2th,R2exp=R2e,navs=navs,p=4) # R2 posterior, evaluated on the R2th axis. p is the number of timeseries
+    R2CI = cpm.R2postCI(R2e=R2e,navs=navs,p=4,c=0.68) # R2 posterior confidence interval at given confidence level
+
+
+    fig,ax=plt.subplots(figsize=(7,3))
+    ax.plot(PSDth,PSDpp,c='k')
+    ax.errorbar(x=[PSDCI[1]], y=0, xerr = [[PSDCI[1]-PSDCI[0]],[PSDCI[2]-PSDCI[1]]],
+                fmt='.', color='black', capsize=3, linestyle='None')
     ax.set_xlabel('PSD'); ax.set_ylabel('PDF')
-    
-    fig,ax=plt.subplots(1,2,figsize=(9,4),sharey=True,sharex=True)
-    ax[0].plot(rho2th,rho2pp)
+    fig.tight_layout()
+
+    fig,ax=plt.subplots(1,2,figsize=(8,3),sharey=True,sharex=True)
+    ax[0].plot(rho2th,rho2pp,c='k')
+    ax[0].errorbar(x=[rho2CI[1]],y=0, xerr = [[rho2CI[1]-rho2CI[0]],[rho2CI[2]-rho2CI[1]]],
+                   fmt='.', color='black', capsize=3, linestyle='None')
     ax[0].set_xlabel('MSC'); ax[0].set_ylabel('PDF')
-    
-    ax[1].plot(R2th,R2pp)
-    ax[1].set_xlabel('R2'); ax[1].set_ylabel('PDF')
+
+    ax[1].plot(R2th,R2pp,c='k')
+    ax[1].errorbar(x=[R2CI[1]],y=0, xerr = [[R2CI[1]-R2CI[0]],[R2CI[2]-R2CI[1]]],
+                   fmt='.', color='black', capsize=3, linestyle='None')
+    ax[1].set_xlabel('R2'); #ax[1].set_ylabel('PDF')
+    fig.tight_layout()
 
 .. figure:: _images/output_17_0.png
    :width: 500px

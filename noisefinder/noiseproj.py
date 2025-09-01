@@ -1,6 +1,3 @@
-# noiseproj.py
-# L Sala, July25
-
 import numpy as np
 import scipy.stats as st
 import scipy.special as sp

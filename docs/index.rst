@@ -20,6 +20,7 @@
    :caption: Project Info
 
    pf_readme
+   pf_install
    pf_howtouse
    pf_howtouse_decorr
    pf_contributing

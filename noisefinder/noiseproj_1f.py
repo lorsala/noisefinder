@@ -1,6 +1,3 @@
-# noiseproj_1f.py
-# L Sala, July25
-
 import numpy as np
 import scipy.stats as st
 import scipy.special as sp
@@ -120,12 +117,18 @@ class noiseproj_1f:
             alpim_CI = [None,None,None]
         return Sres_CI,alpre_CI,alpim_CI
 
-    def _PSDrespost_eval(self,PSDaxis=None):
+    def PSDrespost_eval(self,PSDaxis=None):
+        """
+        Performs noise projection and returns the residual PSD posterior.
+        """      
         Sres_CI,_,_ = self.sfnp_quantiles(c=0.99)
         if PSDaxis is None: PSDaxis=np.geomspace(Sres_CI[0]/10,Sres_CI[2]*10,1000)
         PDF = self.Sres_PDF.pdf(x=PSDaxis)
         return PSDaxis,PDF
-    def _ASDrespost_eval(self,ASDaxis=None):
+    def ASDrespost_eval(self,ASDaxis=None):
+        """
+        Performs noise projection and returns the residual ASD posterior.
+        """   
         PSDaxis = None if ASDaxis is None else ASDaxis**2
         PSDaxis,PSDPDF = self.PSDrespost_eval(PSDaxis=PSDaxis)
         ASDaxis=np.sqrt(PSDaxis)

@@ -1,6 +1,3 @@
-# CPSD_LPFmethod.py
-# L Sala, July25
-
 import numpy as np
 from .CPSDstats import CPSDstats
 from . import specwindows

@@ -1,6 +1,3 @@
-# addendums to base class: PSD. MSC, R2 quantiles
-# L Sala, July25
-
 import numpy as np
 import scipy.special as sp
 import scipy.stats as st
