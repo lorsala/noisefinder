@@ -22,7 +22,7 @@ class CPSDstats():
     win: Callable   
         Spectral window (function).
     olap: float
-        Overlap among segments (percent). Defaults to 50.
+        Overlap among segments, 1 means complete overlap. Defaults to 0.50.
     detrend_c: bool
         If ``True``, subtract mean before performing fft. Defaults to ``False``.
     winscheme : Callable
@@ -57,7 +57,7 @@ class CPSDstats():
     self.PSD:
         Only available after calling :func:`CPSDstats.CPSD_eval`, PSDs of the input timeseries.
     """
-    def __init__(self,ts,fs,win,olap=50,detrend_c=False,winscheme=None,verbose=False):
+    def __init__(self,ts,fs,win,olap=0.50,detrend_c=False,winscheme=None,verbose=False):
         self._sanitycheck(ts)
         self.datamat = np.asarray(ts)
         if(self.datamat.ndim==1):
@@ -65,6 +65,7 @@ class CPSDstats():
         self.fs = fs
         self.matp = self.datamat.shape[0]
         self.N = self.datamat.shape[1]
+        assert olap<=1, "Overlap must be less than 1."
         self.olap = olap
         self.win = win
         self.detrend_c = detrend_c
@@ -311,7 +312,7 @@ def _evalCPSD_1freq(datamat,tmpL,tmpk,fs,win,olap,detrend_c):
         periodograms.append(ax)
         Amat += np.outer(ax,ax.conj()) #fill CPSD matrix
         tmpnavs += 1
-        startpoint += int(tmpL*(100-olap)/100)
+        startpoint += int(tmpL*(1-olap))
     
     if tmpnavs==0: return Amat*0,0,[]
     wins2 = winpt@winpt

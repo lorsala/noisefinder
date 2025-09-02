@@ -19,12 +19,12 @@ class CPSD_WOSAmethod(CPSDstats):
     win: Callable   
         Spectral window (function).
     olap: float
-        Overlap among segments (percent). Defaults to 50.
+        Overlap among segments. Defaults to 0.50.
     detrend_c: bool
         If ``True``, subtract mean before performing fft. Defaults to ``False``.
     verbose : bool
     """
-    def __init__(self,ts:list,nperseg:float,fs:float,win,olap=50,detrend_c=False,verbose:bool=False):
+    def __init__(self,ts:list,nperseg:float,fs:float,win,olap=0.50,detrend_c=False,verbose:bool=False):
         super().__init__(ts=ts,fs=fs,detrend_c=detrend_c,win=win,olap=olap)
         self.nperseg=int(nperseg)
         self._CPSD_WOSA_eval()
@@ -76,7 +76,7 @@ def _evalWOSACPSD(datamat,nperseg,fs,win,olap,detrend_c):
         periodograms.append(ax)
         Amat += ax[:,None,:] * ax.conj()[None,:,:] #np.outer(ax,ax.conj()) #fill CPSD matrix
         tmpnavs += 1
-        startpoint += int(nperseg*(100-olap)/100)
+        startpoint += int(nperseg*(1-olap))
 
     Amat = np.moveaxis(Amat,-1,0)
     # if tmpnavs==0: return Amat*0,0,[]

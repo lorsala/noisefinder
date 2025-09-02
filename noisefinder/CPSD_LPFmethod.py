@@ -23,7 +23,7 @@ class CPSD_LPFmethod(CPSDstats):
     verbose : bool
     """
     def __init__(self,ts,Tmax,fmax,fs,detrend_c=False,verbose=False):
-        super().__init__(ts=ts,fs=fs,win=specwindows.BH92,olap=50,detrend_c=detrend_c)
+        super().__init__(ts=ts,fs=fs,win=specwindows.BH92,olap=0.50,detrend_c=detrend_c)
         freqs,Ls,kcoeffs = self._LPFfreqscheme(Nmax=Tmax*fs,fmax=fmax,fs=fs)
         self.CPSD_eval(freqs,Ls,kcoeffs)
         if(verbose):
