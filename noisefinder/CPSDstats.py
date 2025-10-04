@@ -166,6 +166,23 @@ If this is not what you want, please use another class which inherits from this 
         return self.freqs,self.MSC,self.R2,self.navs
     
     #add stats methods to base class
+
+    def PSDposterior_frozen(self,tsidx):
+        """
+        Returns frozen PSD posterior.
+
+        Parameters
+        ----------
+        tsidx : int
+            Index of the timeseries for PSD evaluation.
+        """
+        self._checkCPSD()
+        assert tsidx<self.matp
+        PSDs = np.real(self.CPSD[:,tsidx,tsidx])
+        navs = self.navs
+        PSDpostfrozen = [CPSDstats_methods.PSDposterior(expPSD=PSD,navs=n) for PSD,n in zip(PSDs,navs)]
+        return PSDpostfrozen
+
     def PSDposterior_eval(self,PSDaxis,tsidx):
         """
         Returns the PSD posterior.
