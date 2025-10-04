@@ -96,6 +96,8 @@ If this is not what you want, please use another class which inherits from this 
         self.kcoeffs = kcoeffs
         assert np.all(np.isclose(self.kcoeffs,np.floor(self.kcoeffs))), "kcoeffs must be an array of integers" #Just make sure this is an array of integers
         assert np.all(np.isclose(self.Ls,np.floor(self.Ls))), "Ls must be an array of integers"  #Just make sure this is an array of integers
+        if hasattr(self, "CPSD"):
+            warnings.warn("This element already contains an evaluated CPSD. I'm overriding it. Please check.")
 
         freqout = self.kcoeffs*self.fs/self.Ls
         if not np.all(np.isclose(freqs,freqout)):
@@ -123,6 +125,7 @@ If this is not what you want, please use another class which inherits from this 
     def merge(self,other):
         """
         Merges two CPSD classes, with a weighted average based on the number of periodograms available. Obviously, the CPSDs must be evaluated at the same frequencies.
+        Can be called with "+".
         """
         self._checkCPSD()
         other._checkCPSD()
@@ -136,6 +139,12 @@ If this is not what you want, please use another class which inherits from this 
         self.MSC = np.abs(self.cohere)**2
         self.R2 = _getR2(CPSD=self.CPSD,navs=self.navs)
         self.PSD = [np.real(self.CPSD[:,i,i]) for i in range(self.matp)]
+
+    def __add__(self,other):
+        """
+        See :meth:`merge`.
+        """
+        self.merge(other)
         
     def getCPSD(self): 
         """
@@ -172,7 +181,7 @@ If this is not what you want, please use another class which inherits from this 
         assert tsidx<self.matp
         PSDs = np.real(self.CPSD[:,tsidx,tsidx])
         navs = self.navs
-        PSDPDFs = [CPSDstats_methods.PSDposterior(expPSD=PSD,n=n).pdf(PSDaxis) for PSD,n in zip(PSDs,navs)]
+        PSDPDFs = [CPSDstats_methods.PSDposterior(expPSD=PSD,navs=n).pdf(PSDaxis) for PSD,n in zip(PSDs,navs)]
         return PSDPDFs
     def ASDposterior_eval(self,ASDaxis,tsidx):
         """
