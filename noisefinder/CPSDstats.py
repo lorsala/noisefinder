@@ -23,6 +23,7 @@ class CPSDstats():
         Spectral window (function).
     olap: float
         Overlap among segments, 1 means complete overlap. Defaults to 0.50.
+        Note: overlap may be reduced to maximize data usage, preserving the number of windows.
     detrend_c: bool
         If ``True``, subtract mean before performing fft. Defaults to ``False``.
     winscheme : Callable
@@ -105,8 +106,8 @@ If this is not what you want, please use another class which inherits from this 
 
         self.freqs = freqout
 
-        self.CPSD, self.navs = _evalCPSD(datamat=self.datamat,Ls=self.Ls,kcoeffs=self.kcoeffs,fs=self.fs,win=self.win,
-                                       olap=self.olap,detrend_c=self.detrend_c,winscheme=self.winscheme)
+        self.CPSD, self.navs, self.periodograms = _evalCPSD(datamat=self.datamat,Ls=self.Ls,kcoeffs=self.kcoeffs,fs=self.fs,win=self.win,
+                                                            olap=self.olap,detrend_c=self.detrend_c,winscheme=self.winscheme)
         self.cohere = _getcohere(CPSD=self.CPSD)
         self.MSC = np.abs(self.cohere)**2
         self.R2 = _getR2(CPSD=self.CPSD,navs=self.navs)
@@ -135,6 +136,7 @@ If this is not what you want, please use another class which inherits from this 
         #set CPSD. note that nan_to_num sets nans to zero so that we can sum even if PSD is nondefined (e.g. navs=0)
         self.CPSD = (np.nan_to_num(self.CPSD)*self.navs[:,None,None]+np.nan_to_num(other.CPSD)*other.navs[:,None,None])/(self.navs[:,None,None]+other.navs[:,None,None])
         self.navs = self.navs+other.navs
+        self.periodograms = [np.concatenate((per1,per2), axis=0) for per1,per2 in zip(self.periodograms,other.periodograms)]
         self.cohere = _getcohere(CPSD=self.CPSD)
         self.MSC = np.abs(self.cohere)**2
         self.R2 = _getR2(CPSD=self.CPSD,navs=self.navs)
@@ -299,14 +301,16 @@ If this is not what you want, please use another class which inherits from this 
 def _evalCPSD(datamat,Ls,kcoeffs,fs,win,olap,detrend_c,winscheme):
     CPSD = []
     navs = []
+    periodograms = []
     for (tmpL,tmpk) in zip(Ls,kcoeffs):
         if winscheme is None or winscheme is False: wintmp = win
         else: wintmp = winscheme(tmpk,fs)
-        tmpCPSD,tmpnavs,_ = _evalCPSD_1freq(datamat=datamat,tmpL=tmpL,tmpk=tmpk,fs=fs,win=wintmp,olap=olap,detrend_c=detrend_c)
+        tmpCPSD,tmpnavs,tmpperiodograms = _evalCPSD_1freq(datamat=datamat,tmpL=tmpL,tmpk=tmpk,fs=fs,win=wintmp,olap=olap,detrend_c=detrend_c)
             
         CPSD.append(tmpCPSD)
         navs.append(tmpnavs)
-    return np.asarray(CPSD),np.asarray(navs)
+        periodograms.append(tmpperiodograms)
+    return np.asarray(CPSD),np.asarray(navs),periodograms
 
 
 def _evalCPSD_1freq(datamat,tmpL,tmpk,fs,win,olap,detrend_c):
@@ -323,22 +327,29 @@ def _evalCPSD_1freq(datamat,tmpL,tmpk,fs,win,olap,detrend_c):
     p = -2j*np.pi*np.arange(0,tmpL,1)/tmpL
     C = np.exp(tmpk*p); #DFT coefficients
 
-    startpoint = 0
-    tmpnavs = 0
+    #detect startpoints, optimize olap to maximize coverage (this reduces overlap)
+
+    # standard olap
+    # nonolapL = np.floor(tmpL*(1-olap))
+
+    #optimized olap
+    tmpM = np.floor(npoints/(tmpL*(1-olap))-olap/(1-olap))
+    nonolapL = np.floor((npoints-tmpL)/(tmpM-1))
+
+    startpoints = np.arange(0,npoints,nonolapL,dtype=int) #find generic start points
+    startpoints = startpoints[startpoints + tmpL <= npoints] #restrict to valid ones
+    tmpnavs = len(startpoints)
+    # assert tmpnavs==tmpM, f"{tmpL},{tmpM},{tmpnavs}"
+    
     Amat = np.zeros((ndim,ndim),dtype=complex)
     periodograms = []
-    while(1):
-        endpoint = startpoint + tmpL
-        if(endpoint > npoints):
-            break
-        xs0 = datamat[:,startpoint:endpoint] #multivariate stretch
+    for startpoint in startpoints:
+        xs0 = datamat[:,startpoint:startpoint+tmpL] #multivariate stretch
         if detrend_c: xs0 = xs0 - np.mean(xs0,axis=1,keepdims=True)
         xs = winpt * xs0 #windowed multivariate stretch
         ax = xs @ C #complex periodogram
         periodograms.append(ax)
         Amat += np.outer(ax,ax.conj()) #fill CPSD matrix
-        tmpnavs += 1
-        startpoint += int(tmpL*(1-olap))
     
     if tmpnavs==0: return Amat*0,0,[]
     wins2 = winpt@winpt
