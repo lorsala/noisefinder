@@ -23,7 +23,7 @@ class CPSDstats():
         Spectral window (function).
     olap: float
         Overlap among segments, 1 means complete overlap. Defaults to 0.50.
-        Note: overlap may be reduced to maximize data usage, preserving the number of windows.
+        Note: overlap will be reduced to maximize data usage, preserving the number of windows.
     detrend_c: bool
         If ``True``, subtract mean before performing fft. Defaults to ``False``.
     winscheme : Callable
@@ -136,7 +136,7 @@ If this is not what you want, please use another class which inherits from this 
         #set CPSD. note that nan_to_num sets nans to zero so that we can sum even if PSD is nondefined (e.g. navs=0)
         self.CPSD = (np.nan_to_num(self.CPSD)*self.navs[:,None,None]+np.nan_to_num(other.CPSD)*other.navs[:,None,None])/(self.navs[:,None,None]+other.navs[:,None,None])
         self.navs = self.navs+other.navs
-        self.periodograms = [np.concatenate((per1,per2), axis=0) for per1,per2 in zip(self.periodograms,other.periodograms)]
+        self.periodograms = [per1 if len(per2)==0 else per2 if len(per1)==0 else np.concatenate((per1,per2), axis=0) for per1,per2 in zip(self.periodograms,other.periodograms)]
         self.cohere = _getcohere(CPSD=self.CPSD)
         self.MSC = np.abs(self.cohere)**2
         self.R2 = _getR2(CPSD=self.CPSD,navs=self.navs)
