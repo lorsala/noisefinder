@@ -63,7 +63,7 @@ def _evalWOSACPSD(datamat,nperseg,fs,win,olap,detrend_c):
     #detect startpoints, optimize olap to maximize coverage (this reduces overlap)
 
     # standard olap
-    # nonolapL = np.floor(tmpL*(1-olap))
+    # nonolapL = np.floor(nperseg*(1-olap))
 
     #optimized olap
     tmpM = np.floor(npoints/(nperseg*(1-olap))-olap/(1-olap))
@@ -78,7 +78,7 @@ def _evalWOSACPSD(datamat,nperseg,fs,win,olap,detrend_c):
     Amat = np.zeros((ndim,ndim,nfreqs),dtype=complex)
     periodograms = []
     for startpoint in startpoints:
-        xs0 = datamat[:,startpoint:startpoint+tmpL] #multivariate stretch
+        xs0 = datamat[:,startpoint:startpoint+nperseg] #multivariate stretch
         if detrend_c: xs0 = xs0 - np.mean(xs0,axis=1,keepdims=True)
         xs = winpt * xs0 #windowed multivariate stretch
 
