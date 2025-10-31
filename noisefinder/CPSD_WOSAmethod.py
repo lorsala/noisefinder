@@ -56,7 +56,7 @@ def _evalWOSACPSD(datamat,nperseg,fs,win,olap,detrend_c):
     npoints = datamat.shape[1]
     freqs = np.fft.rfftfreq(n=nperseg,d=1/fs)
     nfreqs = len(freqs)
-    assert nperseg <= npoints "npoints per stretch must be larger than total npoints."
+    assert nperseg <= npoints, "npoints per stretch must be larger than total npoints."
 
     winpt = win(nperseg) #spectral window
 
