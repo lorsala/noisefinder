@@ -19,7 +19,8 @@ class CPSD_WOSAmethod(CPSDstats):
     win: Callable   
         Spectral window (function).
     olap: float
-        Overlap among segments. Defaults to 0.50.
+        Overlap among segments, 1 means complete overlap. Defaults to 0.50.
+        Note: overlap will be reduced to maximize data usage, preserving the number of windows.
     detrend_c: bool
         If ``True``, subtract mean before performing fft. Defaults to ``False``.
     verbose : bool
@@ -39,7 +40,7 @@ Be aware that, given the amount of frequencies, calculations may take a lot of t
             """.format(self.freqs[1]-self.freqs[0]))
 
     def _CPSD_WOSA_eval(self,nocohere=False):
-        self.CPSD, self.navs, self.freqs, _ = _evalWOSACPSD(datamat=self.datamat,nperseg=self.nperseg,fs=self.fs,win=self.win,
+        self.CPSD, self.navs, self.freqs, self.periodograms = _evalWOSACPSD(datamat=self.datamat,nperseg=self.nperseg,fs=self.fs,win=self.win,
                                        olap=self.olap,detrend_c=self.detrend_c)
         self.Ls = self.freqs**0 * self.nperseg
         self.kcoeffs = np.arange(0,len(self.freqs),1)
@@ -55,18 +56,29 @@ def _evalWOSACPSD(datamat,nperseg,fs,win,olap,detrend_c):
     npoints = datamat.shape[1]
     freqs = np.fft.rfftfreq(n=nperseg,d=1/fs)
     nfreqs = len(freqs)
+    assert nperseg <= npoints "npoints per stretch must be larger than total npoints."
 
     winpt = win(nperseg) #spectral window
 
-    startpoint = 0
-    tmpnavs = 0
+    #detect startpoints, optimize olap to maximize coverage (this reduces overlap)
+
+    # standard olap
+    # nonolapL = np.floor(tmpL*(1-olap))
+
+    #optimized olap
+    tmpM = np.floor(npoints/(nperseg*(1-olap))-olap/(1-olap))
+    nonolapL = np.floor((npoints-nperseg)/(tmpM-1))
+
+    startpoints = np.arange(0,npoints,nonolapL,dtype=int) #find generic start points
+    startpoints = startpoints[startpoints + nperseg <= npoints] #restrict to valid ones
+    tmpnavs = len(startpoints)
+    # assert tmpnavs==tmpM, f"{nperseg},{tmpM},{tmpnavs}"
+
+
     Amat = np.zeros((ndim,ndim,nfreqs),dtype=complex)
     periodograms = []
-    while(1):
-        endpoint = startpoint + nperseg
-        if(endpoint > npoints):
-            break
-        xs0 = datamat[:,startpoint:endpoint] #multivariate stretch
+    for startpoint in startpoints:
+        xs0 = datamat[:,startpoint:startpoint+tmpL] #multivariate stretch
         if detrend_c: xs0 = xs0 - np.mean(xs0,axis=1,keepdims=True)
         xs = winpt * xs0 #windowed multivariate stretch
 
@@ -75,8 +87,6 @@ def _evalWOSACPSD(datamat,nperseg,fs,win,olap,detrend_c):
 
         periodograms.append(ax)
         Amat += ax[:,None,:] * ax.conj()[None,:,:] #np.outer(ax,ax.conj()) #fill CPSD matrix
-        tmpnavs += 1
-        startpoint += int(nperseg*(1-olap))
 
     Amat = np.moveaxis(Amat,-1,0)
     # if tmpnavs==0: return Amat*0,0,[]
@@ -84,7 +94,6 @@ def _evalWOSACPSD(datamat,nperseg,fs,win,olap,detrend_c):
     tmpCPSD  = 2.0*Amat/tmpnavs/fs/wins2; #one-sided CPSD matrix
     periodograms  = np.asarray(periodograms)*np.sqrt(2.0/fs/wins2); #one-sided periodograms
     tmpnavs = freqs**0 * tmpnavs
-
 
     return tmpCPSD,tmpnavs,freqs,periodograms
         
