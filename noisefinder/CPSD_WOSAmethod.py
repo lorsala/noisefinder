@@ -44,10 +44,12 @@ Be aware that, given the amount of frequencies, calculations may take a lot of t
                                        olap=self.olap,detrend_c=self.detrend_c)
         self.Ls = self.freqs**0 * self.nperseg
         self.kcoeffs = np.arange(0,len(self.freqs),1)
-        self.cohere = _getcohere(CPSD=self.CPSD)
-        self.MSC = np.abs(self.cohere)**2
-        self.R2 = _getR2(CPSD=self.CPSD,navs=self.navs)
         self.PSD = [np.real(self.CPSD[:,i,i]) for i in range(self.matp)]
+        if(not np.all(self.navs==0)):
+            self.cohere = _getcohere(CPSD=self.CPSD)
+            self.MSC = np.abs(self.cohere)**2
+            self.R2 = _getR2(CPSD=self.CPSD,navs=self.navs)
+            
 
 
 
@@ -56,7 +58,6 @@ def _evalWOSACPSD(datamat,nperseg,fs,win,olap,detrend_c):
     npoints = datamat.shape[1]
     freqs = np.fft.rfftfreq(n=nperseg,d=1/fs)
     nfreqs = len(freqs)
-    assert nperseg <= npoints, "npoints per stretch must be larger than total npoints."
 
     winpt = win(nperseg) #spectral window
 
@@ -66,16 +67,23 @@ def _evalWOSACPSD(datamat,nperseg,fs,win,olap,detrend_c):
     # nonolapL = np.floor(nperseg*(1-olap))
 
     #optimized olap
-    tmpM = np.floor(npoints/(nperseg*(1-olap))-olap/(1-olap))
-    nonolapL = np.floor((npoints-nperseg)/(tmpM-1))
-
-    startpoints = np.arange(0,npoints,nonolapL,dtype=int) #find generic start points
-    startpoints = startpoints[startpoints + nperseg <= npoints] #restrict to valid ones
+    if(nperseg>npoints):
+        startpoints = np.array([])
+    elif(nperseg==npoints):
+        startpoints=np.array([0])
+    else:
+        tmpM = np.floor(npoints/(nperseg*(1-olap))-olap/(1-olap))
+        nonolapL = npoints if tmpM==1 else np.floor((npoints-nperseg)/(tmpM-1))
+        startpoints = np.arange(0,npoints,nonolapL,dtype=int) #find generic start points
+    
+    startpoints = startpoints[startpoints + nperseg <= npoints] #restrict startpoints to valid ones
     tmpnavs = len(startpoints)
     # assert tmpnavs==tmpM, f"{nperseg},{tmpM},{tmpnavs}"
 
 
     Amat = np.zeros((ndim,ndim,nfreqs),dtype=complex)
+    if tmpnavs==0: return Amat*0,freqs*0,freqs,[]
+
     periodograms = []
     for startpoint in startpoints:
         xs0 = datamat[:,startpoint:startpoint+nperseg] #multivariate stretch

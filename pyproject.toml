@@ -9,14 +9,14 @@ license = {text = "MIT"}
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
-    "numpy (>=2.0.2,<3.0.0)",
-    "scipy (>=1.13.1,<2.0.0)",
-    "mpmath (>=1.3.0,<2.0.0)"
+    "numpy (>=2.0.2)",
+    "scipy (>=1.13.1)",
+    "mpmath (>=1.3.0)"
 ]
 
 
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
+requires = ["poetry-core>=2.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 exclude = [

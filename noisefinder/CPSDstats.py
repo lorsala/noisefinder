@@ -333,15 +333,22 @@ def _evalCPSD_1freq(datamat,tmpL,tmpk,fs,win,olap,detrend_c):
     # nonolapL = np.floor(tmpL*(1-olap))
 
     #optimized olap
-    tmpM = np.floor(npoints/(tmpL*(1-olap))-olap/(1-olap))
-    nonolapL = np.floor((npoints-tmpL)/(tmpM-1))
-
-    startpoints = np.arange(0,npoints,nonolapL,dtype=int) #find generic start points
-    startpoints = startpoints[startpoints + tmpL <= npoints] #restrict to valid ones
+    if(tmpL>npoints):
+        startpoints = np.array([])
+    elif(tmpL==npoints):
+        startpoints=np.array([0])
+    else:
+        tmpM = np.floor(npoints/(tmpL*(1-olap))-olap/(1-olap))
+        nonolapL = npoints if tmpM==1 else np.floor((npoints-tmpL)/(tmpM-1))
+        startpoints = np.arange(0,npoints,nonolapL,dtype=int) #find generic start points
+    
+    startpoints = startpoints[startpoints + tmpL <= npoints] #restrict startpoints to valid ones
     tmpnavs = len(startpoints)
     # assert tmpnavs==tmpM, f"{tmpL},{tmpM},{tmpnavs}"
     
     Amat = np.zeros((ndim,ndim),dtype=complex)
+    if tmpnavs==0: return Amat*0,0,[]
+
     periodograms = []
     for startpoint in startpoints:
         xs0 = datamat[:,startpoint:startpoint+tmpL] #multivariate stretch
@@ -351,7 +358,7 @@ def _evalCPSD_1freq(datamat,tmpL,tmpk,fs,win,olap,detrend_c):
         periodograms.append(ax)
         Amat += np.outer(ax,ax.conj()) #fill CPSD matrix
     
-    if tmpnavs==0: return Amat*0,0,[]
+    
     wins2 = winpt@winpt
     tmpCPSD  = 2.0*Amat/tmpnavs/fs/wins2; #one-sided CPSD matrix
     periodograms  = np.asarray(periodograms)*np.sqrt(2.0/fs/wins2); #one-sided periodograms
