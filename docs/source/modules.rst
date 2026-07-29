@@ -1,5 +1,5 @@
 noisefinder
-=========================
+===========
 
 .. toctree::
    :maxdepth: 4

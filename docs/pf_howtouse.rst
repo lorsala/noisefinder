@@ -1,25 +1,42 @@
-How to use
-==========
+How to use (CPSD estimate)
+===========================
 
-Calculate CPSDs and statistics
+
+Define a Frequency scheme
 ------------------------------
 
-| Generally, calculate the CPSD matrix of a few time series
-  (synchronously sampled) with the class
-  :class:`noisefinder.CPSDstats`. However, the user should *never* use directly :class:`noisefinder.CPSDstats`.
-| The reason is that :class:`noisefinder.CPSDstats` does not include a
-  *frequency scheme*, i.e., a set of frequencies, stretch length, and
-  Fourier index at which to calculate the CPSDs.
-| In `noisefinder`, we provide a few useful frequency schemes: - The *LPF
-  frequency scheme*, :class:`noisefinder.CPSD_LPFmethod`, with
-  logarithmic-spaced frequencies and stretch lengths, and constant
-  Fourier index (see :class:`noisefinder.CPSD_LPFmethod` for details).
-  - The *WOSA (Welch) frequency scheme*,
-  :class:`noisefinder.CPSD_WOSAmethod`, with linearly-spaced
-  frequencies, and a single stretch length.
-| The experienced user can create their own classes, which inherit from
-  :class:`noisefinder.CPSDstats` and use it for CPSD evaluation and
-  statistics.
+CPSD calculation (along with PSD estimation, MSC estimation, and confidence interval inference) relies on a *frequency scheme*, i.e., a set of stretch lengths and DFT indexes at which to calculate the CPSD. Given the two arrays and the sampling frequency, the DFT frequencies are constrained by :math:`f = k / (L / f_s)`.
+
+An example is the *WOSA (Welch) frequency scheme*, with a single stretch length, and DFT index :math:`k` increasing linearly. 
+Another example, which we provide in :func:`noisefinder.freqscheme_presets.lpfScheme`, is the LPF frequency scheme, with stretch length decreasing logarithmically, and DFT index :math:`k=8` for all frequencies except the first.
+The experienced user can create a custom frequency scheme as described at the end of this page.
+
+.. tip::
+   The WOSA scheme is also available as preset, but not directly in :mod:`noisefinder.freqscheme_presets`. The reason is that the WOSA CPSD is much more efficiently evaluated with FFT, which is directly defined in :func:`noisefinder.cpsd.cpsdevaluatewosa.CPSDevaluateWOSA`.
+
+
+Calculate the CPSD matrix
+------------------------------
+
+After defining the frequency scheme, the user can evaluate the CPSD matrix. This is done with the function :func:`noisefinder.cpsd.cpsdevaluate.CPSDevaluate`. Parameters of this function are :attr:`~noisefinder.cpsd.cpsdevaluate.CPSDevaluate.ts` and :attr:`~noisefinder.cpsd.cpsdevaluate.CPSDevaluate.freqscheme`, respectively the list of synchronous timeseries, and the frequency scheme object.
+*Note:* the function requires a list of timeseries, even if only one timeseries is present.
+This function calculates the CPSD matrix, the PSDs, the MSCs, and the multiple coherence R2.
+
+.. note::
+   The boolean parameter :attr:`~noisefinder.cpsd.cpsdevaluate.CPSDevaluate.optimalolap` reduces the maximum overlap :attr:`~noisefinder.cpsd.cpsdevaluate.CPSDevaluate.olapmax` to maximize data usage, for each segment length. See image:
+
+   .. figure:: _images/optimaloverlap.png
+       :width: 500px
+       :align: center
+
+
+Extract Statistics
+------------------------------
+Many function to extract useful statistics (PSD posteriors, confidence intervals, etc.) are available in module :mod:`noisefinder.cpsd.stats`.
+
+
+Practical Example
+------------------------------
 
 For this example, we implement the LPF method, and a give an
 introductory example.
@@ -28,73 +45,75 @@ introductory example.
 
     import noisefinder
     import numpy as np
-    import scipy.stats as st
-    import scipy.signal as sig
+    import scipy
 
-| Just generate two time series with :math:`1/f^2` and white noise
-  spectrum, for this example.
-| Calculate the Welch PSD for comparison.
+Just generate two time series with :math:`1/f^2` and white noise
+spectrum, for this example.
+Calculate the Welch PSD for comparison.
 
 .. code:: ipython3
 
-    datA = np.cumsum(st.norm.rvs(size=100000))
-    datB = 1000*st.norm.rvs(size=100000)
+    datA = np.cumsum(scipy.stats.norm.rvs(size=100000))
+    datB = 1000*scipy.stats.norm.rvs(size=100000)
     fs = 10 #sampling frequency
-    
-    #calculate welch for comparison
-    PSDfA,PSDvA = sig.welch(datA,fs=10,window='blackmanharris',nperseg=20000)
-    PSDfB,PSDvB = sig.welch(datB,fs=10,window='blackmanharris',nperseg=20000)
 
-Now create a :class:`noisefinder.CPSD_LPFmethod` instance. It already
-implements the LPF frequency scheme and calculates the CPSD matrices at
-those frequencies.
+    #calculate Welch for comparison
+    CPSD_WOSA  = noisefinder.cpsd.CPSDevaluateWOSA(ts=[datA,datB],nperseg=20000,win=noisefinder.specwindows.BH92,fs=fs,olapmax=0.50,detrend_c=False,optimalolap=True)
+    PSD_WOSA_datA = CPSD_WOSA.PSD[0]
+    PSD_WOSA_datB = CPSD_WOSA.PSD[1]
 
-.. code:: ipython3
+    # note, this is equivalent to the following with scipy.signal.welch and scipy.signal.csd, if optimalolap=False.
+    # in our case, with optimalolap=True, we reduce overlap to maximize data usage
+    # PSDfA,PSDvA = scipy.signal.welch(datA,fs=10,window='blackmanharris',nperseg=20000)
 
-    meas_LPFmethod = noisefinder.CPSD_LPFmethod(ts=[datA,datB],fs=fs,Tmax=2000,fmax=1)
-
-It saves useful parameters as class attributes (see full list at
-:class:`noisefinder.CPSDstats`):
+Now create a frequency scheme with :func:`noisefinder.CPSD_LPFmethod`. 
+It implements the LPF frequency scheme. Then run evaluation.
 
 .. code:: ipython3
 
-    meas_LPFmethod.CPSD  # The CPSD matrix, at the Fourier frequencies
-    meas_LPFmethod.PSD   # The PSDs of the input time series, at the Fourier frequencies
-    meas_LPFmethod.freqs # The Fourier frequencies
-    meas_LPFmethod.navs  # The number of averaged periodograms, useful for confidence interval evaluation
-    meas_LPFmethod.cohere # Coherencies
-    meas_LPFmethod.Ls # The stretch length (number of samples) for CPSD evaluation at each frequency.
+    LPF_frscheme = noisefinder.freqscheme_presets.lpfScheme(Lmax=20000, fmax=None, fs=fs)
+    CPSD_LPF  = noisefinder.cpsd.CPSDevaluate(ts=[datA,datB],freqscheme=LPF_frscheme)
+
+It saves useful parameters as attributes (see full list at
+:class:`noisefinder.cpsd.CPSDresults`):
+
+.. code:: ipython3
+
+    CPSD_LPF.CPSD  # The CPSD matrix, at the Fourier frequencies
+    CPSD_LPF.PSD   # The PSDs of the input time series, at the Fourier frequencies
+    CPSD_LPF.freqs # The Fourier frequencies
+    CPSD_LPF.navs  # The number of averaged periodograms, useful for confidence interval evaluation
+    CPSD_LPF.cohere # Coherencies
+    CPSD_LPF.Ls # The stretch length (number of samples) for CPSD evaluation at each frequency.
 
 
-Calculate the PSD posterior confidence interval (for instance, at 0.68 -
+Calculate the ASD posterior confidence interval (for instance, at 0.68 -
 1 sigma confidence level).
 
 .. code:: ipython3
 
-    #extract quantiles
-    meas_LPFmethod_PSDq = meas_LPFmethod.PSDquantiles_eval(cval=0.68)
-    meas_LPFmethod_PSDq_datA = meas_LPFmethod_PSDq[0,:,:]
-    meas_LPFmethod_PSDq_datB = meas_LPFmethod_PSDq[1,:,:]
-    
+    ASD_LPF_CI_datA = noisefinder.cpsd.stats.ASDposterior_qnt(CPSD_LPF,tsidx=0,q=[(1-0.68)/2,0.50,((1+0.68)/2)])
+    ASD_LPF_CI_datB = noisefinder.cpsd.stats.ASDposterior_qnt(CPSD_LPF,tsidx=1,q=[(1-0.68)/2,0.50,((1+0.68)/2)])
+
     fig,ax=plt.subplots()
-    ax.loglog(PSDfA[4:],np.sqrt(PSDvA[4:]),lw=1, c='b', alpha=0.3)
-    ax.loglog(PSDfB[4:],np.sqrt(PSDvB[4:]),lw=1, c='r', alpha=0.3)
-    
-    ax.errorbar(meas_LPFmethod.freqs,
-                np.sqrt(meas_LPFmethod_PSDq_datA[1,:]),
-                yerr = [np.sqrt(meas_LPFmethod_PSDq_datA[1,:])-np.sqrt(meas_LPFmethod_PSDq_datA[0,:]),
-                        np.sqrt(meas_LPFmethod_PSDq_datA[2,:])-np.sqrt(meas_LPFmethod_PSDq_datA[1,:])],
+    ax.loglog(CPSD_WOSA.freqs[4:],np.sqrt(PSD_WOSA_datA[4:]),lw=1, c='b', alpha=0.3)
+    ax.loglog(CPSD_WOSA.freqs[4:],np.sqrt(PSD_WOSA_datB[4:]),lw=1, c='r', alpha=0.3)
+
+    ax.errorbar(CPSD_LPF.freqs,
+                ASD_LPF_CI_datA[1,:],
+                yerr = [ASD_LPF_CI_datA[1,:]-ASD_LPF_CI_datA[0,:],
+                        ASD_LPF_CI_datA[2,:]-ASD_LPF_CI_datA[1,:]],
                 linestyle='',capsize=2.5,lw=1,c='b',fmt='.',label='datA')
-    ax.errorbar(meas_LPFmethod.freqs,
-                np.sqrt(meas_LPFmethod_PSDq_datB[1,:]),
-                yerr = [np.sqrt(meas_LPFmethod_PSDq_datB[1,:])-np.sqrt(meas_LPFmethod_PSDq_datB[0,:]),
-                        np.sqrt(meas_LPFmethod_PSDq_datB[2,:])-np.sqrt(meas_LPFmethod_PSDq_datB[1,:])],
+    ax.errorbar(CPSD_LPF.freqs,
+                ASD_LPF_CI_datB[1,:],
+                yerr = [ASD_LPF_CI_datB[1,:]-ASD_LPF_CI_datB[0,:],
+                        ASD_LPF_CI_datB[2,:]-ASD_LPF_CI_datB[1,:]],
                 linestyle='',capsize=2.5,lw=1,c='r',fmt='.',label='datB')
     ax.grid(); ax.set_xlabel('Frequencies [Hz]'); ax.set_ylabel('ASD'); ax.legend()
     plt.show()
 
 
-.. figure:: _images/output_13_0.png
+.. figure:: _images/cpsdeval.png
    :width: 500px
    :align: center
 
@@ -102,94 +121,78 @@ We can also calculate the MSC between the two series, whose true values
 in our example is zero.
 
 .. code:: ipython3
-    
-    meas_LPFmethod_MSCq_AB = meas_LPFmethod.MSCquantiles_eval(idx1=0,idx2=1,cval=0.68)
-    
+
+    CPSD_LPF_MSC = noisefinder.cpsd.stats.MSCposterior_qnt(CPSD_LPF,idx1=0,idx2=1,q=[(1-0.68)/2,0.50,((1+0.68)/2)])
+
     fig,ax=plt.subplots()
-    ax.errorbar(x=meas_LPFmethod.freqs,
-                y=meas_LPFmethod_MSCq_AB[:,1],
-                yerr = [meas_LPFmethod_MSCq_AB[:,1]-meas_LPFmethod_MSCq_AB[:,0],meas_LPFmethod_MSCq_AB[:,2]-meas_LPFmethod_MSCq_AB[:,1]],
+    ax.errorbar(x=CPSD_LPF.freqs,
+                y=CPSD_LPF_MSC[:,1],
+                yerr = [CPSD_LPF_MSC[:,1]-CPSD_LPF_MSC[:,0],CPSD_LPF_MSC[:,2]-CPSD_LPF_MSC[:,1]],
                 linestyle='',capsize=2.5,lw=1,c='C0',fmt='.',label='MSC')
     ax.grid(); ax.set_ylim([0,1]); ax.set_xscale('log'); ax.legend()
     ax.set_xlabel('Frequencies [Hz]'); ax.set_ylabel('MSC');
     plt.show()
 
-.. figure:: _images/output_15_0.png
+.. figure:: _images/cpsdevalMSC.png
    :width: 500px
    :align: center
 
-Note that all the functionalities above, and more, can be used with different frequency schemes such as :class:`noisefinder.CPSD_WOSAmethod`, or a custom-defined one.
 
 Only calculate CPSD statistics
 ---------------------------------
 
 | The user could also be interested in calculating PSD statistics (or
   MSC) of a single measured PSD sample, without using the
-  functionalities of :class:`noisefinder.CPSD_LPFmethod`.
+  functionalities in :mod:`noisefinder.cpsd.stats`.
 | This can be done:
 
 .. code:: ipython3
 
-    from noisefinder.CPSDstats import CPSDstats_methods as cpm
+    # PSD posterior distribution, as frozen scipy.stats, of the PSD posterior 
+    PSD_datA_distrib = noisefinder.cpsd.stats_methods.PSDposterior_dist_onebin(CPSD_LPF.PSD[0][0], navs=CPSD_LPF.navs[0]) 
+    PSD_datA_f0_rvs = PSD_datA_distrib.rvs(size=100000)
 
-    PSDfr = cpm.PSDposterior(expPSD=15.0,navs=8)     # PSD posterior, as frozen scipy.stats, of the PSD posterior 
-    PSDth = np.linspace(0,60,300)
-    PSDpp = PSDfr.pdf(PSDth) # PSD posterior, evaluated at PSDth
-    PSDCI = cpm.PSDpostCI(expPSD=15.0,navs=8,c=0.68) # PSD posterior confidence interval at given confidence level
+    # PSD pdf, evaluated at given points
+    PSDth_axis = np.linspace(0,1e6,300)
+    PSDpdf = noisefinder.cpsd.stats_methods.PSDposterior_onebin(CPSD_LPF.PSD[0][0], navs=CPSD_LPF.navs[0],PSDth=PSDth_axis)
+    PSDCI  = noisefinder.cpsd.stats.PSDposterior_qnt(CPSD_LPF, tsidx=0, q=[(1-0.68)/2,0.50,((1+0.68)/2)])
 
-    rho2th=np.linspace(0,1,300)
-    r2e=0.5; navs=14; R2e=0.1; 
-    rho2pp = cpm.rho2posterior(rho2th=rho2th,rho2exp=r2e,navs=navs) # MSC posterior evaluated on the rho2th axis 
-    rho2CI = cpm.rho2postCI(r2e=r2e,navs=navs,c=0.68) # MSC posterior confidence interval at given confidence level
+    MSCth=np.linspace(0,1,300)
+    MSCexp=0.5; navs=14;
+    MSCpdf = noisefinder.cpsd.stats_methods.MSCposterior_onebin(MSCth=MSCth,MSCexp=MSCexp,navs=navs) # MSC posterior evaluated on the MSCth axis 
+    MSCCI = noisefinder.cpsd.stats_methods.MSCposterior_qnt_onebin(MSCexp=MSCexp,navs=navs,q=[(1-0.68)/2,0.50,((1+0.68)/2)]) # MSC posterior confidence interval at given confidence level
 
     R2th=np.linspace(0,1,300)
-    R2pp = cpm.R2posterior(R2th=R2th,R2exp=R2e,navs=navs,p=4) # R2 posterior, evaluated on the R2th axis. p is the number of timeseries
-    R2CI = cpm.R2postCI(R2e=R2e,navs=navs,p=4,c=0.68) # R2 posterior confidence interval at given confidence level
+    R2exp=0.8
+    R2pdf = noisefinder.cpsd.stats_methods.R2posterior_onebin(R2th=R2th,R2exp=R2exp,navs=navs,p=4) # R2 posterior, evaluated on the R2th axis. p is the number of timeseries
+    R2CI = noisefinder.cpsd.stats_methods.R2posterior_qnt_onebin(R2exp=R2exp,navs=navs,p=4,q=[(1-0.68)/2,0.50,((1+0.68)/2)]) # R2 posterior confidence interval at given confidence level
 
 
-    fig,ax=plt.subplots(figsize=(7,3))
-    ax.plot(PSDth,PSDpp,c='k')
-    ax.errorbar(x=[PSDCI[1]], y=0, xerr = [[PSDCI[1]-PSDCI[0]],[PSDCI[2]-PSDCI[1]]],
-                fmt='.', color='black', capsize=3, linestyle='None')
-    ax.set_xlabel('PSD'); ax.set_ylabel('PDF')
-    fig.tight_layout()
-
-    fig,ax=plt.subplots(1,2,figsize=(8,3),sharey=True,sharex=True)
-    ax[0].plot(rho2th,rho2pp,c='k')
-    ax[0].errorbar(x=[rho2CI[1]],y=0, xerr = [[rho2CI[1]-rho2CI[0]],[rho2CI[2]-rho2CI[1]]],
-                   fmt='.', color='black', capsize=3, linestyle='None')
-    ax[0].set_xlabel('MSC'); ax[0].set_ylabel('PDF')
-
-    ax[1].plot(R2th,R2pp,c='k')
-    ax[1].errorbar(x=[R2CI[1]],y=0, xerr = [[R2CI[1]-R2CI[0]],[R2CI[2]-R2CI[1]]],
-                   fmt='.', color='black', capsize=3, linestyle='None')
-    ax[1].set_xlabel('R2'); #ax[1].set_ylabel('PDF')
-    fig.tight_layout()
-
-.. figure:: _images/output_17_0.png
+.. figure:: _images/PSD_pdf.png
    :width: 500px
    :align: center
 
-.. figure:: _images/output_17_1.png
+.. figure:: _images/MSC_R2_pdf.png
    :width: 700px
    :align: center
 
 Experienced user: custom frequency scheme
 ------------------------------------------
 
-| The experienced user can define new frequency schemes, as new classes inheriting from :class:`noisefinder.CPSDstats`.
+| The experienced user can define new frequency schemes, creating instances of :class:`noisefinder.freqscheme.FreqScheme`.
 | A simple example, with just three hardcoded frequencies, is
 
 .. code:: ipython3
 
-    class CPSD_custom(noisefinder.CPSDstats):
-        def __init__(self,ts,fs,detrend_c=False,verbose=False): # more user-defined params
-            win = noisefinder.specwindows.BH92 #user-defined
-            olap = 50 #user-defined 
-            super().__init__(ts=ts,fs=fs,win=win,olap=olap,detrend_c=detrend_c)
-            freqs = np.array([0.004, 0.0066667, 0.0111111]) #user-defined, with external method
-            Ls = np.array([20000, 12000, 7200]) #user-defined, with external method
-            kcoeffs = np.array([8,8,8]) #user-defined, with external method
-            self.CPSD_eval(freqs,Ls,kcoeffs) #explicitly evaluate CPSD matrices
-
-    meas_custom = CPSD_custom(ts=[datA,datB],fs=fs)
+    def custom_freqscheme(fs): # more user-defined params
+        BH92 = noisefinder.specwindows.BH92 #user-defined
+        Ls = np.array([20000, 12000, 7200]) #user-defined, with external method
+        dft_idxs = np.array([8,8,8]) #user-defined, with external method
+        return noisefinder.FreqScheme(
+            fs=fs,
+            olapmax=0.50,
+            dft_idxs=dft_idxs,
+            Ls=Ls,
+            win=BH92,
+            optimalolap=True
+        )

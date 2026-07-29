@@ -12,7 +12,7 @@
    :maxdepth: 3
    :caption: Package docs:
 
-   modules
+   source/modules
 
 
 .. toctree::
@@ -25,12 +25,3 @@
    pf_howtouse_decorr
    pf_contributing
    pf_license
-
-
-
-
-.. automodule:: noisefinder
-   :members:
-   :undoc-members:
-   :show-inheritance:
-

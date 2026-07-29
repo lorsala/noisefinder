@@ -1,152 +1,216 @@
+"""
+Multi-frequency noise projection.
+"""
+
+from dataclasses import dataclass
 import numpy as np
-import scipy.stats as st
-import scipy.special as sp
-from .CPSDstats import CPSDstats
-from .noiseproj_1f import noiseproj_1f
-import warnings
-    
-class noiseproj:
-    """
-    Single-frequency noise projection (decorrelation) tool.
-    Evaluates noise projection parameters at individual frequencies.
-    
+
+from . import noiseprojsf
+
+
+def run_noiseproj(CPSDmat: np.ndarray, navs: np.ndarray, case="complex"):
+    """Perform noise projection (decorrelation) across all frequencies.
+
+    For each frequency, computes the posterior distributions of
+    residual noise power and susceptibilities by decorrelating the
+    channels of the CPSD matrix. Internally builds one
+    :class:`noiseprojsf.NoiseProjSfResults` instance per frequency and
+    collects them into a :class:`noiseproj`.
+
+
     Parameters
-    -----------
+    ----------
+    CPSDmat : np.ndarray
+        Multi-frequency Cross Power Spectral Density matrix, with
+        shape ``(n_freqs, p, p)``.
+    navs : np.ndarray
+        Number of averaged periodograms at each frequency, with shape
+        ``(n_freqs,)``. Each entry must satisfy ``navs[i] >= p``.
+    case : str, optional
+        Prior assumed on the susceptibilities: ``"complex"`` or
+        ``"real"``. Defaults to ``"complex"``.
 
-    CPSDin:
-        The nfreq x p x p CPSD matrix, or an :class:`noisefinder.CPSDstats` object (or any inheriting class).
-    navs: float 
-        Number of averaged periodograms, requirement: ``navs>=CPSDdim``. Must be left void if CPSDin is an CPSDstats object.
-    freqs : float 
-        Frequency array, optional. Must be left void if CPSDin is an CPSDstats object.
-    case : string 
-        Prior on susceptibilities: "complex" or "real". Defaults to "complex".
-    
-    Yields
-    -----------
+    Returns
+    -------
+    noiseproj
+        Instance of :class:`noiseproj` containing the per-frequency
+        noise projection results.
 
-    Instances: 
-        of noiseproj_1f for all frequencies
-    Sres_CI: 
-        residual noise PSD, confidence interval
-    alpre_CI: 
-        real part of susceptibilities, confidence interval
-    alpim_CI: 
-        imag part of susceptibilities, confidence interval
-    """        
+    Raises
+    ------
+    ValueError
+        If `CPSDmat` is not 3D, not square in its last two axes, if
+        `navs` does not have one entry per frequency, if `case` is
+        not ``"real"`` or ``"complex"``, or if there is only one
+        timeseries (nothing to decorrelate).
+    TypeError
+        If `navs` is not a NumPy array.
+    """
 
-    def __init__(self,CPSDin,navs=None,freqs=None,
-                 case="complex",verbose=False):        
-        if isinstance(CPSDin,CPSDstats):
-            if navs is not None: warnings.warn("In noiseproj.__init__, input CPSD is an object CPSDstats, but you gave navs as input, are you sure? I'm overriding navs.", RuntimeWarning)
-            if freqs is not None: warnings.warn("In noiseproj.__init__, input CPSD is an object CPSDstats, but you gave freqs as input, are you sure? I'm overriding freqs.", RuntimeWarning)
-            CPSDin._checkCPSD()
-            CPSD = CPSDin.CPSD
-            navs = CPSDin.navs
-            freqs = CPSDin.freqs
-        else: CPSD = np.copy(CPSDin)
-        self._init_main_(CPSD=CPSD,navs=navs,freqs=freqs,case=case,verbose=verbose)
+    if not CPSDmat.ndim == 3:
+        msg = "CPSD matrix must be 3D (multi-frequency CPSD matrix). First axis is frequency axis."
+        raise ValueError(msg)
+    if not CPSDmat.shape[1] == CPSDmat.shape[2]:
+        msg = "CPSD matrix must be square."
+        raise ValueError(msg)
+    if not isinstance(navs, np.ndarray):
+        msg = "nav must be an array."
+        raise TypeError(msg)
+    if not CPSDmat.shape[0] == navs.shape[0]:
+        msg = (
+            "navs dimension must coincide with CPSD dimension (number of frequencies)."
+        )
+        raise ValueError(msg)
+    if case not in ("real", "complex"):
+        msg = "Case needs to be either real or complex."
+        raise ValueError(msg)
+
+    r = CPSDmat.shape[1] - 1
+
+    if not r > 0:
+        msg = "Just one timeseries, nothing to decorrelate."
+        raise ValueError(msg)
+
+    sfnp_arr = [
+        noiseprojsf.run_noiseproj_sf(CPSDmat=CPSDmat[ffi, :, :], nav=navs[ffi], case=case)
+        for ffi in range(len(navs))
+    ]
+
+    sfnp_arr = NoiseProjResults(
+        sfnp_arr=sfnp_arr,
+    )
+
+    return sfnp_arr
 
 
-    def _init_main_(self,CPSD,navs,freqs,case="complex",verbose=False):
-        assert isinstance(CPSD,np.ndarray)
-        assert CPSD.ndim==3, "If you only have one frequency bin, use noiseproj_1f"
-        assert CPSD.shape[1]==CPSD.shape[2]
-        
-        self.r = CPSD.shape[-1]-1
-        self.navs = navs
-        self.case = case
-        self.CPSD = CPSD
-        if hasattr(self, 'freqs'):
-            self.freqs = freqs
-            assert self.freqs.shape==self.navs.shape, "freqs and navs must have the same shape."
-        
-        self.sfnp_1f = []
-        for ffi in range(len(navs)):
-            sfnp_1f_tmp = noiseproj_1f(self.CPSD[ffi,:,:],self.navs[ffi],case=self.case)
-            self.sfnp_1f.append(sfnp_1f_tmp)
-        
-        if(verbose):
-            print(
-                """**** noiseproj init verbose ****
-This object contains the noise projection posteriors, with CPSDs you provided.
-You can access the confidence intervals with get_noiseprojpost(cval),
-for other information please look at the documentation.
-            """)
-            
-    def _init_fromCPSDstats_(cls,other:CPSDstats,navs=None,freqs=None):
-        """Alternative constructor with CPSDstats object as input"""
-        return cls(other.CPSD, other.navs, other.freqs ,case="complex")
-    
-    def get_noiseprojCI(self,cval): 
-        """
-        Performs noise projection and returns confidence intervals.
+@dataclass(frozen=True, kw_only=True)
+class NoiseProjResults:
+    """Multi-frequency noise projection (decorrelation) results.
 
-        Parameters
-        ----------
-        cval:float
-            Confidence level.
+    Collects the single-frequency noise projection results produced
+    by :func:`NoiseProj`, one per analyzed frequency.
 
-        Returns
-        ----------
-        Sres_CI: Confidence interval for the residual PSD.
-        alpre_CI: Confidence interval for the susceptibilities, real part.
-        alpim_CI: Confidence interval for the susceptibilities, imaginary part.
-        """       
-        Sres_CI = []
-        alpre_CI = []
-        alpim_CI = []
-        for ffi in range(len(self.navs)):
-            sfnp_1f_tmp = noiseproj_1f(self.CPSD[ffi,:,:],self.navs[ffi],case=self.case)
-            Sres_CI_tmp,alpre_CI_tmp,alpim_CI_tmp = sfnp_1f_tmp.sfnp_quantiles(c=cval)
-            Sres_CI.append(Sres_CI_tmp)
-            alpre_CI.append(alpre_CI_tmp)
-            alpim_CI.append(alpim_CI_tmp)
-        Sres_CI = np.asarray(Sres_CI)
-        alpre_CI = np.asarray(alpre_CI)
-        alpim_CI = np.asarray(alpim_CI)
-        return Sres_CI,alpre_CI,alpim_CI
+    Parameters
+    ----------
+    sfnp_arr : list of noiseprojsf.noiseproj_sf
+    """
 
-    def PSDrespost_eval(self,PSDaxis=None):
-        """
-        Performs noise projection and returns the residual PSD posterior.
+    sfnp_arr: list[noiseprojsf.NoiseProjSfResults]
+    """List of single-frequency noise projection results, ordered by
+        frequency, as returned by :class:`noiseprojsf.NoiseProjSf`."""
 
-        Parameters
-        ----------
-        PSDaxis: 
-            Axis on which to evaluate the PSD posterior. If ``None``, auto evaluates it.
 
-        Returns
-        ----------
-        PSDaxis
-        list of PSD posteriors
-        """       
-        if PSDaxis is not None:
-            pass
-        else: #generate PSDaxis
-            c=0.99
-            Sres_CI = np.asarray([[sfnp_1f.Sres_PDF.ppf((1-c)/2),0,sfnp_1f.Sres_PDF.ppf((1+c)/2)] for sfnp_1f in self.sfnp_1f])
-            PSDlim = np.min(Sres_CI[:,0]), np.max(Sres_CI[:,2])
-            PSDaxis = np.geomspace(PSDlim[0]/100,PSDlim[1]*100,1000)
-        return PSDaxis, [sfnp_1f.PSDrespost_eval(PSDaxis=PSDaxis)[1] for sfnp_1f in self.sfnp_1f]
-    def ASDrespost_eval(self,ASDaxis=None):
-        """
-        Performs noise projection and returns the residual ASD posterior.
+def PSDresidual_qnt(mfnp, q):
+    """Compute confidence intervals for the residual noise PSD.
 
-        Parameters
-        ----------
-        ASDaxis: 
-            Axis on which to evaluate the ASD posterior. If ``None``, auto evaluates it.
+    For each frequency in `mfnp`, computes the quantiles of the
+    residual Power Spectral Density remaining after noise projection.
 
-        Returns
-        ----------
-        ASDaxis
-        list of ASD posteriors
-        """  
-        PSDaxis = None if ASDaxis is None else ASDaxis**2
-        PSDaxis,PSDPDFs = self.PSDrespost_eval(PSDaxis=PSDaxis)
-        ASDaxis=np.sqrt(PSDaxis)
-        ASDPDFs = [PSDPDF * 2 * PSDaxis for PSDPDF in PSDPDFs]
-        return ASDaxis,ASDPDFs
-        
-        
+    Parameters
+    ----------
+    mfnp : noisefinder.noiseproj
+        Multi-frequency noise projection results, as returned by
+        :func:`NoiseProj`.
+    q : float
+        Lower-tail probability.
+
+    Returns
+    -------
+    np.ndarray
+        Residual noise PSD confidence intervals, with shape
+        ``(3, n_freqs)``: lower bound, median, and upper bound for
+        each frequency.
+    """
+
+    q = np.atleast_1d(q)
+    if np.any((q < 0) | (q > 1)):
+        msg = "q must be between 0 and 1."
+        raise ValueError(msg)
+
+    PSDres_qnt = [noiseprojsf.sfPSDresidual_qnt(sfnp, q) for sfnp in mfnp.sfnp_arr]
+    return np.asarray(PSDres_qnt).T
+
+
+def ASDresidual_qnt(mfnp, q):
+    """Compute confidence intervals for the residual noise ASD.
+
+    Derives the Amplitude Spectral Density confidence intervals as the
+    square root of the residual PSD confidence intervals (see
+    :func:`PSDresidual_qnt`).
+
+    Parameters
+    ----------
+    mfnp : noiseproj
+        Multi-frequency noise projection results, as returned by
+        :func:`NoiseProj`.
+    q : float
+        Lower-tail probability.
+
+    Returns
+    -------
+    np.ndarray
+        Residual noise ASD confidence intervals, with shape
+        ``(3, n_freqs)``: lower bound, median, and upper bound for
+        each frequency.
+    """
+    PSDres_qnt = PSDresidual_qnt(mfnp, q)
+    ASDres_qnt = np.sqrt(PSDres_qnt)
+    return ASDres_qnt
+
+
+def alpProj_qnt(mfnp, q):
+    """Compute confidence intervals for the projected susceptibilities.
+
+    For each frequency in `mfnp`, computes the quantiles of the real
+    and imaginary parts of the susceptibilities estimated by noise
+    projection.
+
+    Parameters
+    ----------
+    mfnp : noiseproj
+        Multi-frequency noise projection results, as returned by
+        :func:`NoiseProj`.
+    q : float
+        Lower-tail probability.
+
+    Returns
+    -------
+    alpre_qnt : np.ndarray
+        Confidence intervals for the real part of the susceptibilities,
+        with shape ``(3, n_freqs)``.
+    alpim_qnt : np.ndarray
+        Confidence intervals for the imaginary part of the
+        susceptibilities, with shape ``(3, n_freqs)``.
+    """
+
+    alp_qnt = [noiseprojsf.sfalpProj_qnt(sfnp, q) for sfnp in mfnp.sfnp_arr]
+    alpre_qnt, alpim_qnt = zip(*alp_qnt) if alp_qnt else ((), ())
+
+    return np.asarray(alpre_qnt), np.asarray(alpim_qnt)
+
+
+def R2contrib_qnt(mfnp, q):
+    """Compute confidence intervals for the R2 contribution.
+
+    For each frequency in `mfnp`, computes the quantiles of the
+    contribution to the multiple coherence R2 attributable to noise
+    projection.
+
+    Parameters
+    ----------
+    mfnp : noiseproj
+        Multi-frequency noise projection results, as returned by
+        :func:`NoiseProj`.
+    q : float
+        Lower-tail probability.
+
+    Returns
+    -------
+    np.ndarray
+        R2 contribution confidence intervals, with shape
+        ``(3, n_freqs)``: lower bound, median, and upper bound for
+        each frequency.
+    """
+
+    R2contrib_qnt = [noiseprojsf.sfR2contrib_qnt(sfnp, q) for sfnp in mfnp.sfnp_arr]
+    return np.asarray(R2contrib_qnt).T

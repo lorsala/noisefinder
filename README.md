@@ -2,20 +2,20 @@
 
 [![Doc badge](https://img.shields.io/badge/Docs-available-brightgreen)](docs/_build/html/index.html)
 [![DOI](https://img.shields.io/badge/Reference-10.48550/arXiv.2507.20846-blue)](https://doi.org/10.48550/arXiv.2507.20846)
-[![License badge](https://img.shields.io/badge/License-MIT-orange)](.)
+[![License badge](https://img.shields.io/badge/License-BSD-orange)](.)
 
-`noisefinder` is a python package for precise spectral estimation. It derives from [our work](https://doi.org/10.48550/arXiv.2507.20846), which you can find on arXiv.\
+`noisefinder` is a python package for precise spectral estimation. It derives from our work, which you can [find on arXiv](https://doi.org/10.48550/arXiv.2507.20846).\
 An initial version of this code has been used for the data analysis of the LISA Pathfinder mission [^1] [^2].
 
 `noisefinder` precisely estimates the spectral properties of time series. The precise Bayesian estimate is particularly relevant whenever the number of available averaging windows (*periodograms*) is very low, for instance at very-low frequencies. Moreover, it performs noise projection (timeseries decorrelation), allowing for precise retrieval of background noise in the presence of disturbing sources.
 
 In particular, `noisefinder` allows to:
-* Calculate the **cross-PSD** of the given timeseries, their *coherence*, and *multiple coherence*.
+* Calculate the **cross-PSD** of the given (synchronous) timeseries, their *coherence*, and *multiple coherence*.
     * For each frequency, calculate the confidence interval of the **PSD estimate** and the **coherences**. This result is inferred from the Bayesian posterior distributions, depending on the number of available averaging windows.
     * Choose a frequency scheme as needed. For instance, the user can select the LISA Pathfinder scheme.
 * Apply noise projection estimate to decorrelate all timeseries from the first one:
     * Retrieve the **residual noise**, and its confidence level.
-    * Retrieve the **coefficients coupling** the time series to the first one (*susceptibilities*, complex-valued), and their confidence level.
+    * Retrieve the **coupling coefficients** of the time series to the first one (*susceptibilities*, complex-valued), and their confidence level.
     * Retrieve the total **contribution to noise** (*multiple coherence*), and its confidence level.
 
 

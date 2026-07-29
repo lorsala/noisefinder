@@ -7,9 +7,9 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'noisefinder'
-copyright = '2025, Lorenzo Sala'
+copyright = '2026, Lorenzo Sala'
 author = 'Lorenzo Sala'
-release = '1.0'
+release = '0.1'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
