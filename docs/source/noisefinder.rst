@@ -8,6 +8,7 @@ Subpackages
    :maxdepth: 4
 
    noisefinder.cpsd
+   noisefinder.noiseproj
 
 Submodules
 ----------
@@ -17,8 +18,6 @@ Submodules
 
    noisefinder.freqscheme
    noisefinder.freqscheme_presets
-   noisefinder.noiseproj
-   noisefinder.noiseprojsf
    noisefinder.specwindows
 
 Module contents

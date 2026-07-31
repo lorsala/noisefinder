@@ -17,7 +17,7 @@ class DataSet:
     ts: list[np.ndarray]
     """List of synchronously sampled time series, one array per
         channel/signal."""
-    datamat: np.ndarray = field(init=False)
+    datamat: np.ndarray = field(init=False, repr=False)
     """Combined data matrix built from `ts`. Set automatically
         (not passed at initialization)."""
     matp: int = field(init=False)
@@ -32,16 +32,30 @@ class DataSet:
         self._sanitycheck()
 
         datamat = np.asarray(self.ts)
-        if datamat.ndim == 1:
-            datamat = np.reshape(datamat, (1, datamat.size))
         object.__setattr__(self, "datamat", datamat)
         object.__setattr__(self, "matp", datamat.shape[0])
         object.__setattr__(self, "Ltot", datamat.shape[1])
 
     def _sanitycheck(self):
         if not isinstance(self.ts, list):
-            msg = "input timeseries must be given as a list"
-            raise ValueError(msg)
-        if not np.all([ts_tmp.shape == self.ts[0].shape for ts_tmp in self.ts]):
-            msg = "lists have different amount of data"
-            raise ValueError(msg)
+            raise TypeError(f"'ts' must be a list, got {type(self.ts).__name__}")
+
+        if len(self.ts) == 0:
+            raise ValueError("'ts' must contain at least one time series")
+
+        for i, arr in enumerate(self.ts):
+            if not isinstance(arr, np.ndarray):
+                raise TypeError(
+                    f"ts[{i}] must be a numpy.ndarray, got {type(arr).__name__}"
+                )
+            if arr.ndim != 1:
+                raise ValueError(
+                    f"ts[{i}] must be 1-D, got shape {arr.shape}"
+                )
+
+        # length check
+        lengths = [arr.size for arr in self.ts]
+        if len(set(lengths)) > 1:
+            raise ValueError(
+                f"All time series in 'ts' must have equal length, got lengths {lengths}"
+            )

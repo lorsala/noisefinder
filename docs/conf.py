@@ -6,10 +6,17 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
+from importlib.metadata import version
+
 project = 'noisefinder'
 copyright = '2026, Lorenzo Sala'
 author = 'Lorenzo Sala'
-release = '0.1'
+version = version("noisefinder")
+release = version
+
+rst_prolog = f"""
+.. |version| replace:: {release}
+"""
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

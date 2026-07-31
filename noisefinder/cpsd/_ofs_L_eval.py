@@ -24,8 +24,9 @@ def _ofs_L_eval(Ltot, Ls, olapmax, optimalolap=True):
         raise ValueError(msg)
 
     if not optimalolap:
-        nonolapL = np.floor(Ls * (1 - olapmax))
+        nonolapL = np.ceil(Ls * (1 - olapmax))
     else:
         tmpM = np.floor(Ltot / (Ls * (1 - olapmax)) - olapmax / (1 - olapmax))
-        nonolapL = np.where(tmpM <= 1, Ltot, np.floor((Ltot - Ls) / (tmpM - 1)))
+        with np.errstate(divide="ignore", invalid="ignore"):
+            nonolapL = np.where(tmpM <= 1, Ltot, np.floor((Ltot - Ls) / (tmpM - 1)))
     return nonolapL

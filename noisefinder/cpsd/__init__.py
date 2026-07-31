@@ -1,4 +1,4 @@
 from .cpsdresults import CPSDresults
 from .cpsdevaluate import CPSDevaluate
-from .cpsdevaluatewosa import CPSDevaluateWOSA
+from .cpsdmerge import CPSDmerge
 from . import stats

@@ -25,3 +25,4 @@
    pf_howtouse_decorr
    pf_contributing
    pf_license
+   pf_citation

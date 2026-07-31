@@ -35,33 +35,44 @@ def CPSDevaluate(ts, freqscheme, detrend_c=False):
     dataset = DataSet(ts=ts)
     datamat = dataset.datamat
 
-    win = freqscheme.win
-    fs = freqscheme.fs
-
     ofs_L = _ofs_L_eval(Ltot=dataset.Ltot, Ls=freqscheme.Ls, 
         olapmax=freqscheme.olapmax, optimalolap=freqscheme.optimalolap)
 
-    CPSD = []
-    navs = []
-    periodograms = []
-    for tmpL, tmp_dft_idx, tmp_ofs_L in zip(freqscheme.Ls, freqscheme.dft_idxs, ofs_L):
-
-        tmpCPSD, tmpnavs, tmpperiodograms = _evalCPSD_1freq(
+    if freqscheme.name == "wosa": 
+        # WOSA is much more efficient with FFT, so we have a separate function
+        if not np.all(freqscheme.Ls==freqscheme.Ls[0]):
+            raise ValueError("In WOSA scheme, all nperseg must be equal.")
+        if not np.all(ofs_L==ofs_L[0]):
+            raise ValueError("In WOSA scheme, all ofs_L must be equal.")
+        if not dataset.Ltot > freqscheme.Ls[0]:
+            raise ValueError("In WOSA scheme, nperseg must be greater than total length.")
+        CPSD, navs, periodograms = _evalWOSACPSD(
             datamat=datamat,
-            tmpL=tmpL,
-            tmp_dft_idx=tmp_dft_idx,
-            fs=fs,
-            win=win,
-            tmp_ofs_L=tmp_ofs_L,
+            tmpL=freqscheme.Ls[0],
+            tmp_ofs_L=ofs_L[0],
+            fs=freqscheme.fs,
+            win=freqscheme.win,
             detrend_c=detrend_c,
         )
 
-        CPSD.append(tmpCPSD)
-        navs.append(tmpnavs)
-        periodograms.append(tmpperiodograms)
+    else:
+        results = [
+            _evalCPSD_1freq(
+                datamat=datamat,
+                tmpL=tmpL,
+                tmp_dft_idx=tmp_dft_idx,
+                fs=freqscheme.fs,
+                win=freqscheme.win,
+                tmp_ofs_L=tmp_ofs_L,
+                detrend_c=detrend_c,
+            )
+            for tmpL, tmp_dft_idx, tmp_ofs_L
+            in zip(freqscheme.Ls, freqscheme.dft_idxs, ofs_L)
+        ]
 
-    CPSD = np.asarray(CPSD)
-    navs = np.asarray(navs)
+        CPSD, navs, periodograms = map(list, zip(*results))
+        CPSD = np.asarray(CPSD)
+        navs = np.asarray(navs)
 
     CPSDout = CPSDresults(
         CPSD=CPSD,
@@ -168,67 +179,85 @@ def _evalCPSD_1freq(datamat, tmpL, tmp_dft_idx, fs, win, tmp_ofs_L, detrend_c):
     return tmpCPSD, tmpnavs, periodograms
 
 
-def CPSDmerge(CPSD1, CPSD2):
-    """
-    Merges two CPSDresults classes, with a weighted average based on 
-    the number of periodograms available. 
-    Obviously, the CPSDs must be evaluated at the same frequencies.
+def _evalWOSACPSD(datamat, tmpL, fs, win, tmp_ofs_L, detrend_c):
+    """Compute the CPSD matrix using the Welch/WOSA averaging scheme.
+
+    Splits the data into overlapping or non-overlapping segments of
+    length `tmpL`, applies a window, computes the DFT of each segment,
+    and averages the resulting periodograms to estimate the one-sided
+    Cross Power Spectral Density (CPSD) matrix.
+
+    Note
+    ----
+    `datamat` can be multidimensional (``p x N``), in which case the
+    full ``p x p`` CPSD matrix is evaluated at each frequency.
 
     Parameters
-    -------------
+    ----------
+    datamat : np.ndarray
+        Synchronous timeseries, with shape ``(p, N)`` where `p` is
+        the number of channels and `N` the number of samples.
+    tmpL : int
+        Segment length, in samples, used for spectral estimation.
+    fs : float
+        Sampling frequency, in Hz.
+    win : Callable[[int], np.ndarray]
+        Spectral window function; takes the segment length and
+        returns the window coefficients.
+    tmp_ofs_L : int
+        Offset, in samples, between the start of consecutive segments
+        (i.e. ``tmpL - tmp_ofs_L`` is the overlap in samples).
+    detrend_c : bool
+        If ``True``, subtract the mean of each segment before
+        computing the DFT.
 
-    CPSD1: noisefinder.CPSDresults
-
-    CPSD2: noisefinder.CPSDresults
+    Returns
+    -------
+    tmpCPSD : np.ndarray
+        One-sided CPSD matrix, with shape ``(nfreqs, p, p)``. All
+        zeros if no full segment fits in `datamat`.
+    tmpnavs : np.ndarray
+        Number of averaged segments, broadcast to shape ``(nfreqs,)``
+        (constant across frequency for this WOSA scheme). All zeros
+        if no full segment fits in `datamat`.
+    periodograms : np.ndarray
+        One-sided periodograms of each segment, with shape
+        ``(n_segments, p, nfreqs)``. Empty (shape ``(0, p, nfreqs)``)
+        if no full segment fits in `datamat`.
     """
+    ndim, npoints = datamat.shape
+    freqs = np.fft.rfftfreq(n=tmpL, d=1 / fs)
+    nfreqs = len(freqs)
+    winpt = win(tmpL)  # spectral window
 
-    # a few checks
-    if not np.all(CPSD1.fs == CPSD2.fs):
-        msg = "Sampling frequency fs must be the same."
-        raise ValueError(msg)
-    if not np.all(CPSD1.Ls == CPSD2.Ls):
-        msg = "Segment lengths Ls must be the same."
-        raise ValueError(msg)
-    if not np.all(CPSD1.matp == CPSD2.matp):
-        msg = "Number of synchronous timeseries matp must be the same."
-        raise ValueError(msg)
-    if not np.all(CPSD1.dft_idxs == CPSD2.dft_idxs):
-        msg = "DFT indexes dft_idxs must be the same."
-        raise ValueError(msg)
-    if not np.all(CPSD1.detrend_c == CPSD2.detrend_c):
-        msg = "Parameter detrend_c must be the same."
-        raise ValueError(msg)
+    startpoints = np.arange(0, npoints - tmpL + 1, tmp_ofs_L, dtype=int)
+    tmpnavs = len(startpoints)
 
-    # set CPSD. note that nan_to_num sets nans to zero so that we can sum even if PSD is nondefined (e.g. navs=0)
-    CPSD_new = (
-        np.nan_to_num(CPSD1.CPSD) * CPSD1.navs[:, None, None]
-        + np.nan_to_num(CPSD2.CPSD) * CPSD2.navs[:, None, None]
-    ) / (CPSD1.navs[:, None, None] + CPSD2.navs[:, None, None])
-    navs_new = CPSD1.navs + CPSD2.navs
-    periodograms_new = [
-        (
-            per1
-            if len(per2) == 0
-            else per2 if len(per1) == 0 else np.concatenate((per1, per2), axis=0)
-        )
-        for per1, per2 in zip(CPSD1.periodograms, CPSD2.periodograms)
-    ]
-    Ltotnew = CPSD1.Ltot + CPSD2.Ltot
-
-    CPSDout = CPSDresults(
-        CPSD=CPSD_new,
-        freqs=CPSD1.freqs,
-        navs=navs_new,
-        periodograms=periodograms_new,
-        fs=CPSD1.fs,
-        Ls=CPSD1.Ls,
-        dft_idxs=CPSD1.dft_idxs,
-        Ltot=Ltotnew,
-        matp=CPSD1.matp,
-        detrend_c=CPSD1.detrend_c,
-        olapmax=[CPSD1.olapmax, CPSD2.olapmax],
-        ofs_L=None,
-        win=CPSD1.win,
+    # stack all segments at once: shape (n_segments, ndim, tmpL)
+    segments = np.stack(
+        [datamat[:, sp : sp + tmpL] for sp in startpoints], axis=0
     )
+    if detrend_c:
+        segments = segments - np.mean(segments, axis=2, keepdims=True)
+    segments = segments * winpt  # apply window (broadcasts over last axis)
 
-    return CPSDout
+    # one FFT call for all segments/channels at once
+    periodograms = np.fft.rfft(segments, axis=2)  # (n_segments, ndim, nfreqs)
+
+    # CPSD[f, i, j] = sum over segments of periodogram_i * conj(periodogram_j)
+    Amat = np.einsum("kif,kjf->fij", periodograms, periodograms.conj())
+
+    wins2 = winpt @ winpt
+    tmpCPSD = Amat / tmpnavs / fs / wins2  # two-sided CPSD matrix
+    periodograms = periodograms * np.sqrt(1.0 / fs / wins2)  # two-sided periodograms
+
+    tmpCPSD[1:-1] *= 2.0 # one-sided CPSD matrix
+    periodograms[:, :, 1:-1] *= np.sqrt(2.0) #one-sided periodograms
+    if tmpL % 2 != 0: # double last bin only for odd tmpL
+        tmpCPSD[-1] *= 2.0 
+        periodograms[:, :, -1] *= np.sqrt(2.0)
+    
+
+    tmpnavs_arr = np.full(nfreqs, tmpnavs)
+
+    return tmpCPSD, tmpnavs_arr, periodograms

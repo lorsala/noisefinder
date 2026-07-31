@@ -15,7 +15,7 @@ class CPSDresults:
     matrix, computed automatically at initialization via `__post_init__`.
     """
 
-    CPSD: np.ndarray
+    CPSD: np.ndarray = field(repr=False)
     """One-sided Cross Power Spectral Density matrix, with shape
         ``(n_freqs, n_ts, n_ts)``."""
     freqs: np.ndarray
@@ -37,25 +37,25 @@ class CPSDresults:
     """If true, subtracts mean before DFT estimation."""
     olapmax: float
     """Maximum segment overlap fraction used in the estimation."""
-    ofs_L: list[int]
+    ofs_L: list[int] = field(repr=False)
     """Offset(s), in samples, for each segment."""
     win: Callable[[int], list[float]]
     """Spectral window function."""
-    periodograms: list[np.ndarray]
+    periodograms: list[np.ndarray] = field(repr=False)
     """Periodograms computed for each segment, used as the basis for
         the CPSD estimate."""
-    PSD: np.ndarray = field(init=False)
+    PSD: np.ndarray = field(init=False,repr=False)
     """Power Spectral Density, computed as the real part of the
         diagonal of `CPSD`. Set automatically in `__post_init__`, not
         passed at initialization."""
-    cohere: np.ndarray = field(init=False)
+    cohere: np.ndarray = field(init=False,repr=False)
     """Cross-coherence matrix. Set automatically in `__post_init__`,
         not passed at initialization."""
-    MSC: np.ndarray = field(init=False)
+    MSC: np.ndarray = field(init=False,repr=False)
     """Magnitude-Squared Coherence, computed as ``abs(cohere) ** 2``.
         Set automatically in `__post_init__`, not passed at
         initialization."""
-    R2: np.ndarray = field(init=False)
+    R2: np.ndarray = field(init=False,repr=False)
     """Multiple coherence (squared), computed from `CPSD` and `navs`.
         Set automatically in `__post_init__`, not passed at
         initialization."""
@@ -72,6 +72,7 @@ class CPSDresults:
         PSD_tmp = np.real(np.diagonal(self.CPSD, axis1=1, axis2=2)).T
         object.__setattr__(self, "PSD", PSD_tmp)
 
+
     def _evalcohere(self):
         """Evaluate the cross-coherence matrix from the CPSD.
 
@@ -83,10 +84,11 @@ class CPSDresults:
         np.ndarray
             Cross-coherence matrix, with the same shape as `CPSD`.
         """
-        cohere = [
-            np.diag(np.diag(Sij) ** (-1 / 2)) @ Sij @ np.diag(np.diag(Sij) ** (-1 / 2))
-            for Sij in self.CPSD
-        ]
+        with np.errstate(divide="ignore", invalid="ignore"):
+            cohere = [
+                np.diag(np.diag(Sij) ** (-1 / 2)) @ Sij @ np.diag(np.diag(Sij) ** (-1 / 2))
+                for Sij in self.CPSD
+            ]
         return np.asarray(cohere)
 
     def _evalR2(self):

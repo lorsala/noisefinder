@@ -5,15 +5,24 @@ How to use (CPSD estimate)
 Define a Frequency scheme
 ------------------------------
 
-CPSD calculation (along with PSD estimation, MSC estimation, and confidence interval inference) relies on a *frequency scheme*, i.e., a set of stretch lengths and DFT indexes at which to calculate the CPSD. Given the two arrays and the sampling frequency, the DFT frequencies are constrained by :math:`f = k / (L / f_s)`.
+CPSD calculation (along with PSD estimation, MSC estimation, and confidence interval inference) relies on a *frequency scheme*, i.e., a set of **stretch lengths** and **DFT indexes** at which to calculate the CPSD. Given the two arrays and the sampling frequency, the frequency set is defined by 
 
-An example is the *WOSA (Welch) frequency scheme*, with a single stretch length, and DFT index :math:`k` increasing linearly. 
-Another example, which we provide in :func:`noisefinder.freqscheme_presets.lpfScheme`, is the LPF frequency scheme, with stretch length decreasing logarithmically, and DFT index :math:`k=8` for all frequencies except the first.
-The experienced user can create a custom frequency scheme as described at the end of this page.
+.. math:: 
+    f = k / (L / f_s)
+
+An example of a frequency scheme is the *WOSA (Welch)*. It has a single stretch length used to calculate the DFT at all indexes :math:`k`. 
+Another example, which we provide in :func:`noisefinder.freqscheme_presets.lpfScheme`, is the LPF frequency scheme, with stretch length decreasing logarithmically, and DFT index :math:`k=8` for all frequencies except the first (:math:`k=4`).
+
+.. note::
+    Currently, two presets are available in :mod:`noisefinder.freqscheme_presets`:
+
+    #. The LISA Pathfinder scheme :func:`~noisefinder.freqscheme_presets.lpfScheme`,
+    #. The WOSA scheme :func:`~noisefinder.freqscheme_presets.wosaScheme`,
+
+    **DFT and FFT.** Generally, every scheme evaluates the CPSD calculating the DFT coefficients at each frequency, which is efficient if the stretch length depends on frequency. In the WOSA case, where the stretch length is the same for all frequencies, we use the FFT.
 
 .. tip::
-   The WOSA scheme is also available as preset, but not directly in :mod:`noisefinder.freqscheme_presets`. The reason is that the WOSA CPSD is much more efficiently evaluated with FFT, which is directly defined in :func:`noisefinder.cpsd.cpsdevaluatewosa.CPSDevaluateWOSA`.
-
+    The experienced user can create a custom frequency scheme, see also :ref:`custom_frequency_scheme`.
 
 Calculate the CPSD matrix
 ------------------------------
@@ -26,7 +35,7 @@ This function calculates the CPSD matrix, the PSDs, the MSCs, and the multiple c
    The boolean parameter :attr:`~noisefinder.cpsd.cpsdevaluate.CPSDevaluate.optimalolap` reduces the maximum overlap :attr:`~noisefinder.cpsd.cpsdevaluate.CPSDevaluate.olapmax` to maximize data usage, for each segment length. See image:
 
    .. figure:: _images/optimaloverlap.png
-       :width: 500px
+       :width: 700px
        :align: center
 
 
@@ -57,8 +66,29 @@ Calculate the Welch PSD for comparison.
     datB = 1000*scipy.stats.norm.rvs(size=100000)
     fs = 10 #sampling frequency
 
+    
+Now create a frequency scheme with :func:`noisefinder.freqscheme_presets.lpfScheme`. 
+It implements the LPF frequency scheme. Then run evaluation.
+
+.. code:: ipython3
+
+    LPF_frscheme = noisefinder.freqscheme_presets.lpfScheme(
+        Lmax=20000, fmax=None, fs=fs
+        )
+    CPSD_LPF  = noisefinder.cpsd.CPSDevaluate(
+        ts=[datA,datB],
+        freqscheme=LPF_frscheme
+        )
+
     #calculate Welch for comparison
-    CPSD_WOSA  = noisefinder.cpsd.CPSDevaluateWOSA(ts=[datA,datB],nperseg=20000,win=noisefinder.specwindows.BH92,fs=fs,olapmax=0.50,detrend_c=False,optimalolap=True)
+
+    WOSA_frscheme = noisefinder.freqscheme_presets.wosaScheme(
+        nperseg=20000, win=noisefinder.specwindows.BH92, fs=fs,
+        )
+    CPSD_WOSA  = noisefinder.cpsd.CPSDevaluate(
+        ts=[datA,datB],
+        freqscheme=WOSA_frscheme
+        )
     PSD_WOSA_datA = CPSD_WOSA.PSD[0]
     PSD_WOSA_datB = CPSD_WOSA.PSD[1]
 
@@ -66,16 +96,8 @@ Calculate the Welch PSD for comparison.
     # in our case, with optimalolap=True, we reduce overlap to maximize data usage
     # PSDfA,PSDvA = scipy.signal.welch(datA,fs=10,window='blackmanharris',nperseg=20000)
 
-Now create a frequency scheme with :func:`noisefinder.CPSD_LPFmethod`. 
-It implements the LPF frequency scheme. Then run evaluation.
-
-.. code:: ipython3
-
-    LPF_frscheme = noisefinder.freqscheme_presets.lpfScheme(Lmax=20000, fmax=None, fs=fs)
-    CPSD_LPF  = noisefinder.cpsd.CPSDevaluate(ts=[datA,datB],freqscheme=LPF_frscheme)
-
 It saves useful parameters as attributes (see full list at
-:class:`noisefinder.cpsd.CPSDresults`):
+:class:`noisefinder.cpsd.cpsdresults.CPSDresults`):
 
 .. code:: ipython3
 
@@ -92,8 +114,16 @@ Calculate the ASD posterior confidence interval (for instance, at 0.68 -
 
 .. code:: ipython3
 
-    ASD_LPF_CI_datA = noisefinder.cpsd.stats.ASDposterior_qnt(CPSD_LPF,tsidx=0,q=[(1-0.68)/2,0.50,((1+0.68)/2)])
-    ASD_LPF_CI_datB = noisefinder.cpsd.stats.ASDposterior_qnt(CPSD_LPF,tsidx=1,q=[(1-0.68)/2,0.50,((1+0.68)/2)])
+    ASD_LPF_CI_datA = noisefinder.cpsd.stats.ASDposterior_qnt(
+        CPSD_LPF,
+        tsidx=0,
+        q=[(1-0.68)/2,0.50,((1+0.68)/2)]
+        )
+    ASD_LPF_CI_datB = noisefinder.cpsd.stats.ASDposterior_qnt(
+        CPSD_LPF,
+        tsidx=1,
+        q=[(1-0.68)/2,0.50,((1+0.68)/2)]
+        )
 
     fig,ax=plt.subplots()
     ax.loglog(CPSD_WOSA.freqs[4:],np.sqrt(PSD_WOSA_datA[4:]),lw=1, c='b', alpha=0.3)
@@ -176,6 +206,8 @@ Only calculate CPSD statistics
    :width: 700px
    :align: center
 
+.. _custom_frequency_scheme:
+
 Experienced user: custom frequency scheme
 ------------------------------------------
 
@@ -194,5 +226,6 @@ Experienced user: custom frequency scheme
             dft_idxs=dft_idxs,
             Ls=Ls,
             win=BH92,
-            optimalolap=True
+            optimalolap=True,
+            name="custom name"
         )

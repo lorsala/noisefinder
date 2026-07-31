@@ -1,5 +1,5 @@
-How to use (decorr)
-===================
+How to use (Decorrelation)
+===============================
 
 General usage
 -------------
@@ -54,16 +54,16 @@ minimal example.
 
 Now, we perform noise projection / decorrelation, with
 :mod:`noisefinder.noiseproj`, and get the residual confidence
-intervals with :func:`get_noiseprojCI`.
+intervals with :func:`noisefinder.noiseproj.stats.PSDresidual_qnt`, :func:`noisefinder.noiseproj.stats.ASDresidual_qnt`, and :func:`noisefinder.noiseproj.stats.alpha_qnt`.
 
 .. code:: ipython3
 
     # now perform noise projection and retrieve residual
     mfnp = noisefinder.noiseproj.run_noiseproj(CPSDmat=CPSD_LPF.CPSD,navs=CPSD_LPF.navs)
 
-    ASDres_2sigma = noisefinder.noiseproj.ASDresidual_qnt(mfnp,q=[(1-0.95)/2,0.50,((1+0.95)/2)])
+    ASDres_2sigma = noisefinder.noiseproj.stats.ASDresidual_qnt(mfnp,q=[(1-0.95)/2,0.50,((1+0.95)/2)])
 
-    alpre_2sigma, alpim_2sigma = noisefinder.noiseproj.alpProj_qnt(mfnp,q=[(1-0.95)/2,0.50,((1+0.95)/2)])
+    alpre_2sigma, alpim_2sigma = noisefinder.noiseproj.stats.alpha_qnt(mfnp,q=[(1-0.95)/2,0.50,((1+0.95)/2)])
 
 Plot the residual ASD, comparing with the expected values.
 

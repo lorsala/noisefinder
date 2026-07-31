@@ -5,7 +5,7 @@ Posterior PDFs, quantiles.
 
 import numpy as np
 
-from . import stats_methods
+from . import stats_onebin
 
 
 def PSDposterior_dist(CPSDval, tsidx):
@@ -26,7 +26,7 @@ def PSDposterior_dist(CPSDval, tsidx):
     PSDs = np.real(CPSDval.CPSD[:, tsidx, tsidx])
     navs = CPSDval.navs
     PSDpostfrozen = [
-        stats_methods.PSDposterior_dist_onebin(PSDexp=PSD, navs=n)
+        stats_onebin.PSDposterior_dist_onebin(PSDexp=PSD, navs=n)
         for PSD, n in zip(PSDs, navs)
     ]
     return PSDpostfrozen
@@ -87,7 +87,7 @@ def MSCposterior_pdf(CPSDval, idx1, idx2, MSCthaxis):
     MSCexp = CPSDval.MSC[:, idx1, idx2]
     PDFs = []
     for MSCexptmp, navstmp in zip(MSCexp, CPSDval.navs):
-        PDFs.append(stats_methods.MSCposterior_onebin(MSCthaxis, MSCexptmp, navstmp))
+        PDFs.append(stats_onebin.MSCposterior_onebin(MSCthaxis, MSCexptmp, navstmp))
     return PDFs
 
 
@@ -104,7 +104,7 @@ def R2posterior_pdf(CPSDval, R2thaxis):
     PDFs = []
     for R2exptmp, navstmp in zip(CPSDval.R2, CPSDval.navs):
         PDFs.append(
-            stats_methods.R2posterior_onebin(R2thaxis, R2exptmp, navstmp, CPSDval.matp)
+            stats_onebin.R2posterior_onebin(R2thaxis, R2exptmp, navstmp, CPSDval.matp)
         )
     return PDFs
 
@@ -126,7 +126,7 @@ def PSDposterior_qnt(CPSDval, q, tsidx=0):
         raise ValueError(msg)
 
     Sxx = CPSDval.PSD[tsidx]
-    PSD_quantile = stats_methods.PSDposterior_qnt_onebin(Sxx, CPSDval.navs, q=q)
+    PSD_quantile = stats_onebin.PSDposterior_qnt_onebin(Sxx, CPSDval.navs, q=q)
     PSD_quantile = np.asarray(PSD_quantile)
     return PSD_quantile
 
@@ -163,7 +163,7 @@ def MSCposterior_qnt(CPSDval, q, idx1, idx2):
     MSC = CPSDval.MSC[:, idx1, idx2]
     MSCquantile = np.asarray(
         [
-            stats_methods.MSCposterior_qnt_onebin(MSCexp=r2e, navs=M, q=q)
+            stats_onebin.MSCposterior_qnt_onebin(MSCexp=r2e, navs=M, q=q)
             for r2e, M in zip(MSC, CPSDval.navs)
         ]
     )
@@ -182,7 +182,7 @@ def R2posterior_qnt(CPSDval, q):
     """
     R2quantile = np.asarray(
         [
-            stats_methods.R2posterior_qnt_onebin(R2e, navs=M, p=CPSDval.matp, q=q)
+            stats_onebin.R2posterior_qnt_onebin(R2e, navs=M, p=CPSDval.matp, q=q)
             for R2e, M in zip(CPSDval.R2, CPSDval.navs)
         ]
     )

@@ -8,9 +8,10 @@ Submodules
    :maxdepth: 4
 
    noisefinder.cpsd.cpsdevaluate
-   noisefinder.cpsd.cpsdevaluatewosa
+   noisefinder.cpsd.cpsdmerge
    noisefinder.cpsd.cpsdresults
    noisefinder.cpsd.stats
+   noisefinder.cpsd.stats_onebin
 
 Module contents
 ---------------
