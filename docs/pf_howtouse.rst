@@ -32,11 +32,7 @@ After defining the frequency scheme, the user can evaluate the CPSD matrix. This
 This function calculates the CPSD matrix, the PSDs, the MSCs, and the multiple coherence R2.
 
 .. note::
-   The boolean parameter :attr:`~noisefinder.cpsd.cpsdevaluate.CPSDevaluate.optimalolap` reduces the maximum overlap :attr:`~noisefinder.cpsd.cpsdevaluate.CPSDevaluate.olapmax` to maximize data usage, for each segment length. See image:
-
-   .. figure:: _images/optimaloverlap.png
-       :width: 700px
-       :align: center
+   The boolean parameter :attr:`~noisefinder.cpsd.cpsdevaluate.CPSDevaluate.optimalolap` optimizes overlap to maximize data usage, see :ref:`opzimize_overlap`.
 
 
 Extract Statistics

@@ -7,6 +7,22 @@
 
 .. mdinclude:: ../README.md
 
+.. toctree::
+   :maxdepth: 1
+   :caption: About
+
+   pf_readme
+
+
+.. toctree::
+   :maxdepth: 1
+   :caption: User Guide
+
+   pf_install
+   pf_howtouse
+   pf_howtouse_decorr
+   Additional notes <pf_notes_specestimation>
+
 
 .. toctree::
    :maxdepth: 3
@@ -19,10 +35,6 @@
    :maxdepth: 1
    :caption: Project Info
 
-   pf_readme
-   pf_install
-   pf_howtouse
-   pf_howtouse_decorr
    pf_contributing
    pf_license
    pf_citation

@@ -249,13 +249,14 @@ def _evalWOSACPSD(datamat, tmpL, fs, win, tmp_ofs_L, detrend_c):
 
     wins2 = winpt @ winpt
     tmpCPSD = Amat / tmpnavs / fs / wins2  # two-sided CPSD matrix
-    periodograms = periodograms * np.sqrt(1.0 / fs / wins2)  # two-sided periodograms
+    periodograms = periodograms * np.sqrt(2.0 / fs / wins2)  # one-sided periodograms
+    tmpCPSD *= 2.0 # one-sided CPSD matrix
 
-    tmpCPSD[1:-1] *= 2.0 # one-sided CPSD matrix
-    periodograms[:, :, 1:-1] *= np.sqrt(2.0) #one-sided periodograms
-    if tmpL % 2 != 0: # double last bin only for odd tmpL
-        tmpCPSD[-1] *= 2.0 
-        periodograms[:, :, -1] *= np.sqrt(2.0)
+    #tmpCPSD[1:-1] *= 2.0 # one-sided CPSD matrix
+    #periodograms[:, :, 1:-1] *= np.sqrt(2.0) #one-sided periodograms
+    #if tmpL % 2 != 0: # double last bin only for odd tmpL
+    #    tmpCPSD[-1] *= 2.0 
+    #    periodograms[:, :, -1] *= np.sqrt(2.0)
     
 
     tmpnavs_arr = np.full(nfreqs, tmpnavs)
