@@ -1,6 +1,6 @@
 # About noisefinder
 
-[![Doc badge](https://img.shields.io/badge/Docs-available-brightgreen)](docs/_build/html/index.html)
+[![Doc badge](https://img.shields.io/badge/Docs-available-brightgreen)](https://lorsala.github.io/noisefinder/)
 [![DOI](https://img.shields.io/badge/Reference-10.48550/arXiv.2507.20846-blue)](https://doi.org/10.48550/arXiv.2507.20846)
 [![License badge](https://img.shields.io/badge/License-BSD-orange)](.)
 
