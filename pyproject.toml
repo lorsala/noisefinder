@@ -7,7 +7,7 @@ authors = [
 ]
 license = {text = "BSD-3"}
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
     "numpy (>=2.0.2)",
     "scipy (>=1.13.1)",
@@ -23,3 +23,12 @@ exclude = [
     ".ipynb_checkpoints",
     "noisefinder/ipynb_checkpoints",
 ]
+
+[tool.poetry.group.test.dependencies]
+pytest = "^8.0"
+
+[tool.poetry.group.docs.dependencies]
+sphinx = "^8.0"
+myst-parser = "^4.0"
+sphinx-mdinclude = "^0.6.2"
+sphinx-rtd-theme = "^3.1.0"
