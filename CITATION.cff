@@ -1,0 +1,25 @@
+cff-version: 1.2.0
+message: "If you use noisefinder in your research, please cite the associated paper."
+title: "noisefinder"
+version: "0.1.0"
+type: software
+
+authors:
+  - family-names: "Sala"
+    given-names: "Lorenzo"
+    orcid: "https://orcid.org/0000-0002-2682-8274"
+
+license: "BSD-3-Clause"
+
+repository-code: "https://github.com/lorsala/noisefinder"
+
+preferred-citation:
+  type: article
+  authors:
+    - family-names: "Sala"
+      given-names: "Lorenzo"
+    - family-names: "Vitale"
+      given-names: "Stefano"
+  title: "Precision spectral estimation at sub-Hz frequencies: Closed-form posteriors and Bayesian noise projection"
+  journal: "Physical Review D"
+  year: 2026
