@@ -1,6 +1,6 @@
 [project]
 name = "noisefinder"
-version = "1.0.0"
+version = "0.1.0"
 description = ""
 authors = [
     {name = "Lorenzo Sala"}

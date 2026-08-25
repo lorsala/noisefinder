@@ -4,10 +4,10 @@
 [![DOI](https://img.shields.io/badge/Reference-10.48550/arXiv.2507.20846-blue)](https://doi.org/10.48550/arXiv.2507.20846)
 [![License badge](https://img.shields.io/badge/License-BSD-orange)](.)
 
-`noisefinder` is a python package for precise spectral estimation. It derives from our work, which you can [find on arXiv](https://doi.org/10.48550/arXiv.2507.20846).\
+`noisefinder` is a python package for precise spectral estimation, and noise decorrelation. It derives from our work, which you can [find on arXiv](https://doi.org/10.48550/arXiv.2507.20846).\
 An initial version of this code has been used for the data analysis of the LISA Pathfinder mission [^1] [^2].
 
-`noisefinder` precisely estimates the spectral properties of time series. The precise Bayesian estimate is particularly relevant whenever the number of available averaging windows (*periodograms*) is very low, for instance at very-low frequencies. Moreover, it performs noise projection (timeseries decorrelation), allowing for precise retrieval of background noise in the presence of disturbing sources.
+`noisefinder` measures the spectral properties of time series. The precise Bayesian estimate is particularly relevant whenever the number of available averaging windows (*periodograms*) is very low, for instance at very-low frequencies. Moreover, it performs noise projection (timeseries decorrelation), allowing for precise retrieval of background noise in the presence of disturbing sources.
 
 In particular, `noisefinder` allows to:
 * Calculate the **cross-PSD** of the given (synchronous) timeseries, their *coherence*, and *multiple coherence*.
