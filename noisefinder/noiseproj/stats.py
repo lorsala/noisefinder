@@ -2,7 +2,6 @@
 Multi-frequency noise projection.
 """
 
-from dataclasses import dataclass
 import numpy as np
 
 from . import stats_onebin

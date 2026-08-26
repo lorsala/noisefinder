@@ -5,7 +5,6 @@ Single-frequency noise projection.
 from typing import Any
 import warnings
 from dataclasses import dataclass
-import numbers
 
 
 import numpy as np
@@ -138,13 +137,13 @@ def _ExecuteNoiseProjectionReal(CPSDmat, navs, r, case):
     if case != "real":
         msg = "Case must be real for real-susceptibility evaluation"
         raise ValueError(msg)
-    if not CPSDmat.ndim==2:
+    if CPSDmat.ndim!=2:
         msg = "CPSD matrix must be bi-dimensional"
         raise ValueError(msg)
-    if not CPSDmat.shape[0]==CPSDmat.shape[1]:
+    if CPSDmat.shape[0]!=CPSDmat.shape[1]:
         msg = "CPSD matrix must be square."
         raise ValueError(msg)
-    if not CPSDmat.shape[0]-1==r:
+    if CPSDmat.shape[0]-1!=r:
         msg = "Value of r is inconsistent with CPSD dimension."
         raise ValueError(msg)
 
@@ -202,13 +201,13 @@ def _ExecuteNoiseProjectionComplex(CPSDmat, navs, r, case):
     if case != "complex":
         msg = "Case must be complex for complex-susceptibility evaluation"
         raise ValueError(msg)
-    if not CPSDmat.ndim==2:
+    if CPSDmat.ndim!=2:
         msg = "CPSD matrix must be bi-dimensional"
         raise ValueError(msg)
-    if not CPSDmat.shape[0]==CPSDmat.shape[1]:
+    if CPSDmat.shape[0]!=CPSDmat.shape[1]:
         msg = "CPSD matrix must be square."
         raise ValueError(msg)
-    if not CPSDmat.shape[0]-1==r:
+    if CPSDmat.shape[0]-1!=r:
         msg = "Value of r is inconsistent with CPSD dimension."
         raise ValueError(msg)
 

@@ -12,8 +12,13 @@ import scipy.stats as st
 import scipy.integrate
 import mpmath
 
+from typing import Literal
 
-def _loghyp2f1_eff(a, b, c, z, res_mode="varres"):
+
+def _loghyp2f1_eff(
+    a, b, c, z,
+    hyp2f1_mode: Literal["lowres", "varres", "highres"] = "varres",
+):
     """
     Returns log(hyp2f1). If res_mode='lowres', it may be inaccurate.
     However, high resolution takes a long time.
@@ -24,23 +29,23 @@ def _loghyp2f1_eff(a, b, c, z, res_mode="varres"):
 
     a,b,c,z: float
         See hyp2f1 parameters.
-    res_mode: bool
-        Resolution. May be lowres, varres, highres.
+    hyp2f1_mode : str
+        Resolution mode. One of ``"lowres"``, ``"varres"``, or ``"highres"``.
     """
 
-    if res_mode == "lowres":
+    if hyp2f1_mode == "lowres":
         res = np.log(sp.hyp2f1(a, b, c, z))
         return res
-    elif res_mode == "highres":
+    elif hyp2f1_mode == "highres":
         res = mpmath.log(mpmath.hyp2f1(a, b, c, z, maxterms=1e6))
         return res
-    elif res_mode == "varres":
+    elif hyp2f1_mode == "varres":
         res = np.log(sp.hyp2f1(a, b, c, z))
         if np.isinf(res) or np.isnan(res):
             res = mpmath.log(mpmath.hyp2f1(a, b, c, z, maxterms=1e6))
         return res
     else:
-        msg = "res_mode must be 'lowres', 'highres', or 'varres'."
+        msg = "hyp2f1_mode must be 'lowres', 'highres', or 'varres'."
         raise ValueError(msg)
 
 
@@ -121,6 +126,13 @@ def R2posterior_onebin(R2th, R2exp, navs, p):
         Number of timeseries.
     """
 
+    if not np.isfinite(R2exp) or navs < p:
+        warnings.warn(
+            "Invalid input: can't evaluate posterior if R2exp is not finite and navs is not >= p; "
+            "returning NaN."
+        )
+        return np.full_like(R2th, np.nan, dtype=float)
+
     
     logpdf = []
     for R2thtmp in R2th:
@@ -173,9 +185,18 @@ def MSCposterior_qnt_onebin(MSCexp, navs, q):
         Lower-tail probability
     """
     q = np.atleast_1d(q)
+
     if np.any((q < 0) | (q > 1)):
         msg = "q must be between 0 and 1."
         raise ValueError(msg)
+
+    if not np.isfinite(MSCexp) or navs < 2:
+        warnings.warn(
+            "Invalid input: MSCexp must be finite and navs must be >= 2; "
+            "returning NaN."
+        )
+        return np.full_like(q, np.nan, dtype=float)
+
     if navs > 1000 and MSCexp > 0.5:
         warnings.warn(
             f"navs={navs:d}, evaluation can take a long time for MSC and R2, especially if there's high correlation."
@@ -202,9 +223,18 @@ def R2posterior_qnt_onebin(R2exp, navs, q, p):
         Lower-tail probability
     """
     q = np.atleast_1d(q)
+
     if np.any((q < 0) | (q > 1)):
         msg = "q must be between 0 and 1."
         raise ValueError(msg)
+
+    if not np.isfinite(R2exp) or navs < p:
+        warnings.warn(
+            "Invalid input: can't evaluate posterior if R2exp is not finite and navs is not >= p; "
+            "returning NaN."
+        )
+        return np.full_like(q, np.nan, dtype=float)
+
     if navs > 1000 and R2exp > 0.5:
         warnings.warn(
             f"navs={navs:d}, evaluation can take a long time for MSC and R2, especially if there's high correlation."

@@ -30,3 +30,6 @@ jobs:
 
       - name: Run tests
         run: python -m poetry run python -m pytest
+
+      - name: Test notebooks
+        run: python -m poetry run python -m pytest --nbmake examples/
