@@ -31,5 +31,8 @@ jobs:
       - name: Run tests
         run: python -m poetry run python -m pytest
 
+      - name: Install notebook kernel
+        run: python -m poetry run python -m ipykernel install --user --name noisefinder --display-name "noisefinder"
+
       - name: Test notebooks
-        run: python -m poetry run python -m pytest --nbmake --kernel=python3 examples/
+        run: python -m poetry run python -m pytest --nbmake examples/
