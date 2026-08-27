@@ -243,30 +243,28 @@ def R2posterior_qnt_onebin(R2exp, navs, q, p):
     return np.asarray(quantile)
 
 
-def _distquantile(pdffunc, valexp, q, **kwargs):
-    """Compute the quantile of a pdf function at a given q.
+def _distquantile(pdffunc, valexp, q, npoints=500, **kwargs):
+    q = np.atleast_1d(q)
 
-    Parameters
-    ----------
-    pdffunc : callable
-        Probability density function to evaluate, with signature
-        ``pdffunc(x, valexp, **kwargs) -> array``.
-    valexp : float
-        Expected value passed to `pdffunc`.
-    q : list[float],np.ndarray
-        Lower-tail probability.
-    **kwargs
-        Additional keyword arguments passed directly to `pdffunc`
-        (e.g. model-specific parameters for the chosen pdf).
+    # the pdf diverges logarithmically at exactly 1, hence the offset
+    x = np.linspace(0.0, 1.0 - 1e-9, npoints)
+    PDF = np.asarray(pdffunc(x, valexp, **kwargs), dtype=float)
 
-    Returns
-    -------
-    float
-        Quantile corresponding to the lower tail probability q.
-    """
-    x = np.linspace(1e-6, 1 - 1e-6, 500)
-    PDF = pdffunc(x, valexp, **kwargs)
-    CDF = scipy.integrate.cumulative_trapezoid(x=x, y=PDF)
+    if not np.all(np.isfinite(PDF)):
+        warnings.warn(
+            "Non-finite posterior values on the evaluation grid; "
+            "returning NaN quantiles."
+        )
+        return np.full_like(q, np.nan, dtype=float)
+
+    # initial=0.0 keeps CDF aligned with x (same length)
+    CDF = scipy.integrate.cumulative_trapezoid(y=PDF, x=x, initial=0.0)
+    if not CDF[-1] > 0:
+        warnings.warn("Posterior integrates to zero; returning NaN quantiles.")
+        return np.full_like(q, np.nan, dtype=float)
     CDF = CDF / CDF[-1]
-    PPF = [ x[np.argmax(CDF > qtmp)] for qtmp in q]
-    return PPF
+
+    # np.interp needs a strictly increasing abscissa: on flat stretches of
+    # the CDF keep the leftmost x, i.e. the generalized inverse
+    CDF_u, idx = np.unique(CDF, return_index=True)
+    return np.interp(q, CDF_u, x[idx])

@@ -107,7 +107,7 @@ def wosaScheme(nperseg, fs, win, olapmax=0.50, optimalolap=True):
         olapmax=olapmax,
         dft_idxs=dft_idxs,
         Ls=Ls,
-        win=BH92,
+        win=win,
         optimalolap=optimalolap,
         name="wosa"
     )
