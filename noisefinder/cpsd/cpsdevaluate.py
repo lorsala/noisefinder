@@ -172,9 +172,13 @@ def _evalCPSD_1freq(datamat, tmpL, tmp_dft_idx, fs, win, tmp_ofs_L, detrend_c):
     Amat = np.einsum("ki,kj->ij", periodograms, periodograms.conj())
 
     wins2 = winpt @ winpt
-    tmpCPSD = 2.0 * Amat / tmpnavs / fs / wins2  # one-sided CPSD matrix
 
-    periodograms = periodograms * np.sqrt(2.0 / fs / wins2)  # one-sided periodograms
+    if (tmp_dft_idx==0 or (tmp_dft_idx == tmpL // 2 and tmpL % 2 == 0)): #DC or Nyquist
+        tmpCPSD = 1.0 * Amat / tmpnavs / fs / wins2
+        periodograms = periodograms * np.sqrt(1.0 / fs / wins2)
+    else: # non-DC and non-Nyquist: one-sided
+        tmpCPSD = 2.0 * Amat / tmpnavs / fs / wins2  # one-sided CPSD matrix
+        periodograms = periodograms * np.sqrt(2.0 / fs / wins2)  # one-sided periodograms
 
     return tmpCPSD, tmpnavs, periodograms
 

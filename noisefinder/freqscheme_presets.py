@@ -79,7 +79,7 @@ def wosaScheme(nperseg, fs, win, olapmax=0.50, optimalolap=True):
         Spectral window function.
     fs: float
         Sampling frequency.
-    olapmax:
+    olapmax: float
         Maximum overlap.
     optimalolap: bool
         If True, reduces overlap to maximixe data coverage.
@@ -93,9 +93,9 @@ def wosaScheme(nperseg, fs, win, olapmax=0.50, optimalolap=True):
     if not callable(win):
         raise TypeError(f"'win' must be callable, got {type(win).__name__}")
 
-    if not isinstance(olapmax, (int, float)):
-        raise TypeError(f"'olapmax' must be a number, got {type(olapmax).__name__}")
-    if not (0.0 <= olapmax <= 1.0):
+    if not isinstance(olapmax, float):
+        raise TypeError(f"'olapmax' must be a float, got {type(olapmax).__name__}")
+    if not (0.0 < olapmax < 1.0):
         raise ValueError(f"'olapmax' must be between 0 and 1, got {olapmax}")
 
     freqs = np.fft.rfftfreq(n=nperseg, d=1 / fs)

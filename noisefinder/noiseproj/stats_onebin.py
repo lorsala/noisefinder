@@ -127,20 +127,20 @@ def ASDresidual_onebin_qnt(sfnp, q):
 
     Derives the Amplitude Spectral Density confidence interval as the
     square root of the residual PSD confidence interval (see
-    :func:`sfPSDresidual_qnt`).
+    :func:`PSDresidual_onebin_qnt`).
 
     Parameters
     ----------
     sfnp : noiseproj_onebin or None
         Single-frequency noise projection results, as returned by
         :func:`NoiseProjSf`. If ``None``, propagates a
-        ``[nan, nan, nan]`` interval (see :func:`sfPSDresidual_qnt`).
+        ``[nan, nan, nan]`` interval (see :func:`PSDresidual_onebin_qnt`).
     q : float
         Lower-tail probability
 
     """
 
-    PSDres_qnt = sfPSDresidual_qnt(sfnp, q)
+    PSDres_qnt = PSDresidual_onebin_qnt(sfnp, q)
     ASDres_qnt = np.sqrt(PSDres_qnt)
     return ASDres_qnt
 
