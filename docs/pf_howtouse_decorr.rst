@@ -8,11 +8,14 @@ General usage
 *decorrelation*, as we describe in the reference paper. Let’s work out a
 minimal example.
 
-.. code:: ipython3
+.. code:: python
 
     import noisefinder
     import numpy as np
     import scipy
+    import scipy.stats as st
+    import scipy.signal as sig
+    import matplotlib.pyplot as plt
 
 | Generate three time series with known PSDs. The measured ones are
   included in the vector `meas`, whereas `datres` is the residual,
@@ -21,7 +24,7 @@ minimal example.
   :math:`C` through the coefficients :math:`\alpha_i=19,0.1`, which
   we also want to retrieve.
 
-.. code:: ipython3
+.. code:: python
 
     datres = np.cumsum(st.norm.rvs(size=210000))+100*st.norm.rvs(size=210000)
     datB = 0.5*np.cumsum(st.norm.rvs(size=210000))
@@ -45,7 +48,7 @@ minimal example.
 
 | We evaluate the PSD and its statistics.
 
-.. code:: ipython3
+.. code:: python
 
     fs = 10
     LPF_frscheme = noisefinder.freqscheme_presets.lpfScheme(Lmax=20000, fmax=None, fs=fs)
@@ -56,7 +59,7 @@ Now, we perform noise projection / decorrelation, with
 :mod:`noisefinder.noiseproj`, and get the residual confidence
 intervals with :func:`noisefinder.noiseproj.stats.PSDresidual_qnt`, :func:`noisefinder.noiseproj.stats.ASDresidual_qnt`, and :func:`noisefinder.noiseproj.stats.alpha_qnt`.
 
-.. code:: ipython3
+.. code:: python
 
     # now perform noise projection and retrieve residual
     mfnp = noisefinder.noiseproj.run_noiseproj(CPSDmat=CPSD_LPF.CPSD,navs=CPSD_LPF.navs)
@@ -67,7 +70,7 @@ intervals with :func:`noisefinder.noiseproj.stats.PSDresidual_qnt`, :func:`noise
 
 Plot the residual ASD, comparing with the expected values.
 
-.. code:: ipython3
+.. code:: python
 
     fig,ax=plt.subplots()
     ax.loglog(PSDfA[4:],np.sqrt(PSDvA[4:]),lw=1,label='True datA',c='b',alpha=0.25)
@@ -96,7 +99,7 @@ Plot the residual ASD, comparing with the expected values.
 
 And plot the susceptibilities, with their expected values.
 
-.. code:: ipython3
+.. code:: python
 
     fig,ax=plt.subplots(1,2,figsize=(10,4),sharex=True)
 

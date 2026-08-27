@@ -46,17 +46,18 @@ Practical Example
 For this example, we implement the LPF method, and a give an
 introductory example.
 
-.. code:: ipython3
+.. code:: python
 
     import noisefinder
     import numpy as np
     import scipy
+    import matplotlib.pyplot as plt
 
 Just generate two time series with :math:`1/f^2` and white noise
 spectrum, for this example.
 Calculate the Welch PSD for comparison.
 
-.. code:: ipython3
+.. code:: python
 
     datA = np.cumsum(scipy.stats.norm.rvs(size=100000))
     datB = 1000*scipy.stats.norm.rvs(size=100000)
@@ -66,7 +67,7 @@ Calculate the Welch PSD for comparison.
 Now create a frequency scheme with :func:`noisefinder.freqscheme_presets.lpfScheme`. 
 It implements the LPF frequency scheme. Then run evaluation.
 
-.. code:: ipython3
+.. code:: python
 
     LPF_frscheme = noisefinder.freqscheme_presets.lpfScheme(
         Lmax=20000, fmax=None, fs=fs
@@ -95,7 +96,7 @@ It implements the LPF frequency scheme. Then run evaluation.
 It saves useful parameters as attributes (see full list at
 :class:`noisefinder.cpsd.cpsdresults.CPSDresults`):
 
-.. code:: ipython3
+.. code:: python
 
     CPSD_LPF.CPSD  # The CPSD matrix, at the Fourier frequencies
     CPSD_LPF.PSD   # The PSDs of the input time series, at the Fourier frequencies
@@ -108,7 +109,7 @@ It saves useful parameters as attributes (see full list at
 Calculate the ASD posterior confidence interval (for instance, at 0.68 -
 1 sigma confidence level).
 
-.. code:: ipython3
+.. code:: python
 
     ASD_LPF_CI_datA = noisefinder.cpsd.stats.ASDposterior_qnt(
         CPSD_LPF,
@@ -146,7 +147,7 @@ Calculate the ASD posterior confidence interval (for instance, at 0.68 -
 We can also calculate the MSC between the two series, whose true values
 in our example is zero.
 
-.. code:: ipython3
+.. code:: python
 
     CPSD_LPF_MSC = noisefinder.cpsd.stats.MSCposterior_qnt(CPSD_LPF,idx1=0,idx2=1,q=[(1-0.68)/2,0.50,((1+0.68)/2)])
 
@@ -172,26 +173,26 @@ Only calculate CPSD statistics
   functionalities in :mod:`noisefinder.cpsd.stats`.
 | This can be done:
 
-.. code:: ipython3
+.. code:: python
 
     # PSD posterior distribution, as frozen scipy.stats, of the PSD posterior 
-    PSD_datA_distrib = noisefinder.cpsd.stats_methods.PSDposterior_dist_onebin(CPSD_LPF.PSD[0][0], navs=CPSD_LPF.navs[0]) 
+    PSD_datA_distrib = noisefinder.cpsd.stats_onebin.PSDposterior_dist_onebin(CPSD_LPF.PSD[0][0], navs=CPSD_LPF.navs[0]) 
     PSD_datA_f0_rvs = PSD_datA_distrib.rvs(size=100000)
 
     # PSD pdf, evaluated at given points
     PSDth_axis = np.linspace(0,1e6,300)
-    PSDpdf = noisefinder.cpsd.stats_methods.PSDposterior_onebin(CPSD_LPF.PSD[0][0], navs=CPSD_LPF.navs[0],PSDth=PSDth_axis)
+    PSDpdf = noisefinder.cpsd.stats_onebin.PSDposterior_onebin(CPSD_LPF.PSD[0][0], navs=CPSD_LPF.navs[0],PSDth=PSDth_axis)
     PSDCI  = noisefinder.cpsd.stats.PSDposterior_qnt(CPSD_LPF, tsidx=0, q=[(1-0.68)/2,0.50,((1+0.68)/2)])
 
     MSCth=np.linspace(0,1,300)
     MSCexp=0.5; navs=14;
-    MSCpdf = noisefinder.cpsd.stats_methods.MSCposterior_onebin(MSCth=MSCth,MSCexp=MSCexp,navs=navs) # MSC posterior evaluated on the MSCth axis 
-    MSCCI = noisefinder.cpsd.stats_methods.MSCposterior_qnt_onebin(MSCexp=MSCexp,navs=navs,q=[(1-0.68)/2,0.50,((1+0.68)/2)]) # MSC posterior confidence interval at given confidence level
+    MSCpdf = noisefinder.cpsd.stats_onebin.MSCposterior_onebin(MSCth=MSCth,MSCexp=MSCexp,navs=navs) # MSC posterior evaluated on the MSCth axis 
+    MSCCI = noisefinder.cpsd.stats_onebin.MSCposterior_qnt_onebin(MSCexp=MSCexp,navs=navs,q=[(1-0.68)/2,0.50,((1+0.68)/2)]) # MSC posterior confidence interval at given confidence level
 
     R2th=np.linspace(0,1,300)
     R2exp=0.8
-    R2pdf = noisefinder.cpsd.stats_methods.R2posterior_onebin(R2th=R2th,R2exp=R2exp,navs=navs,p=4) # R2 posterior, evaluated on the R2th axis. p is the number of timeseries
-    R2CI = noisefinder.cpsd.stats_methods.R2posterior_qnt_onebin(R2exp=R2exp,navs=navs,p=4,q=[(1-0.68)/2,0.50,((1+0.68)/2)]) # R2 posterior confidence interval at given confidence level
+    R2pdf = noisefinder.cpsd.stats_onebin.R2posterior_onebin(R2th=R2th,R2exp=R2exp,navs=navs,p=4) # R2 posterior, evaluated on the R2th axis. p is the number of timeseries
+    R2CI = noisefinder.cpsd.stats_onebin.R2posterior_qnt_onebin(R2exp=R2exp,navs=navs,p=4,q=[(1-0.68)/2,0.50,((1+0.68)/2)]) # R2 posterior confidence interval at given confidence level
 
 
 .. figure:: _images/PSD_pdf.png
@@ -210,7 +211,7 @@ Experienced user: custom frequency scheme
 | The experienced user can define new frequency schemes, creating instances of :class:`noisefinder.freqscheme.FreqScheme`.
 | A simple example, with just three hardcoded frequencies, is
 
-.. code:: ipython3
+.. code:: python
 
     def custom_freqscheme(fs): # more user-defined params
         BH92 = noisefinder.specwindows.BH92 #user-defined

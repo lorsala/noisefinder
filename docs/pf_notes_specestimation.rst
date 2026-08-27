@@ -80,7 +80,7 @@ segments in order to maximize data usage. This is achieved by reducing the
 overlap from its nominal value
 :attr:`~noisefinder.freqscheme.FreqScheme.olapmax`, effectively
 making the *overlap* parameter act as a *maximum overlap* rather than a fixed
-value (hence the name :attr:`~oisefinder.freqscheme.FreqScheme.olapmax`). 
+value (hence the name :attr:`~noisefinder.freqscheme.FreqScheme.olapmax`). 
 Crucially, the number of averaged segments remains unchanged
 throughout this adjustment -- only the spacing between segments is optimized
 to make better use of the available data. See the image below for a visual
