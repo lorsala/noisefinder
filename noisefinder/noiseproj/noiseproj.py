@@ -66,8 +66,8 @@ def run_noiseproj(CPSDmat: np.ndarray, navs: np.ndarray, case="complex"):
         raise TypeError(f"'navs' must be a numpy.ndarray, got {type(navs).__name__}")
     if not np.issubdtype(navs.dtype, np.integer):
         raise TypeError(f"'navs' must have an integer dtype, got {navs.dtype}")
-    if np.any(navs <= 0):
-        raise ValueError(f"'navs' must contain only positive values, got min {navs.min()}")
+    if np.any(navs < 0):
+        raise ValueError(f"'navs' must not contain negative values, got min {navs.min()}")
     if navs.shape[0] != CPSDmat.shape[0]:
         raise ValueError(
             f"'navs' length ({navs.shape[0]}) must match CPSDmat's first dimension "
@@ -80,6 +80,7 @@ def run_noiseproj(CPSDmat: np.ndarray, navs: np.ndarray, case="complex"):
 
     sfnp_arr = [
         noiseproj_onebin._run_noiseproj_onebin(CPSDmat=CPSDmat[ffi, :, :], navs=navs[ffi], case=case)
+        if navs[ffi] != 0 else None
         for ffi in range(len(navs))
     ]
 

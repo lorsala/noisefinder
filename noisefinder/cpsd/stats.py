@@ -166,7 +166,7 @@ def MSCposterior_qnt(CPSDval, q, idx1, idx2):
             stats_onebin.MSCposterior_qnt_onebin(MSCexp=r2e, navs=M, q=q)
             for r2e, M in zip(MSC, CPSDval.navs)
         ]
-    )
+    ).T
     return MSCquantile
 
 
@@ -185,5 +185,5 @@ def R2posterior_qnt(CPSDval, q):
             stats_onebin.R2posterior_qnt_onebin(R2e, navs=M, p=CPSDval.matp, q=q)
             for R2e, M in zip(CPSDval.R2, CPSDval.navs)
         ]
-    )
+    ).T
     return R2quantile

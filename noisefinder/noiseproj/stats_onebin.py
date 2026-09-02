@@ -150,57 +150,46 @@ def alpha_onebin_qnt(sfnp, q):
 
     Parameters
     ----------
-    sfnp : noiseproj_onebin or None
+    sfnp : noiseproj_onebin
         Single-frequency noise projection results, as returned by
-        :func:`NoiseProjSf`. If ``None`` (decorrelation not possible
-        for this frequency), a `UserWarning` is issued and
-        ``nan``-filled intervals are returned instead of raising.
-    q : float
-        Lower-tail probability.
+        :func:`NoiseProjSf`. Must not be ``None``: frequency bins where
+        decorrelation was not possible are the caller's responsibility
+        to skip (see :func:`alpha_qnt`).
+    q : float or array_like of float
+        Lower-tail probabilities, each in [0, 1].
 
     Returns
     -------
-    alpre_qnt : np.ndarray or list of float
-        Quantile for the real part of each
-        susceptibility.
-    alpim_qnt : np.ndarray or list
-        Quantile for the imaginary part of each
-        susceptibility.
+    alpre_qnt : np.ndarray, shape (r, nq)
+        Quantiles of the real part of each susceptibility.
+    alpim_qnt : np.ndarray, shape (r, nq), or None
+        Quantiles of the imaginary part of each susceptibility.
+        ``None`` if ``sfnp.case == "real"``.
 
-    Warns
-    -----
-    UserWarning
-        If `sfnp` is ``None``, since decorrelation could not be
-        performed for this frequency.
+    Raises
+    ------
+    ValueError
+        If `sfnp` is ``None``, or if any element of `q` is outside [0, 1].
     """
+    if sfnp is None:
+        msg = (
+            "sfnp is None: decorrelation was not possible for this bin "
+            "(number of averages must exceed the number of ts). "
+            "Skip these bins in the caller."
+        )
+        raise ValueError(msg)
 
     q = np.atleast_1d(q)
     if np.any((q < 0) | (q > 1)):
         msg = "q must be between 0 and 1."
         raise ValueError(msg)
 
-    if sfnp is None:
-        warnings.warn(
-            "Number of averages must be greater than number of ts.", UserWarning
-        )
-        return [np.nan], [np.nan]
-
-    alpre_qnt = np.asarray(
-        [
-            [ sfnp.alpre_dist[i].ppf(qtmp) for qtmp in q]
-            for i in range(sfnp.r)
-        ]
-    )
+    alpre_qnt = np.asarray([sfnp.alpre_dist[i].ppf(q) for i in range(sfnp.r)])
 
     if sfnp.case == "complex":
-        alpim_qnt = np.asarray(
-            [
-                [ sfnp.alpim_dist[i].ppf(qtmp) for qtmp in q]
-                for i in range(sfnp.r)
-            ]
-        )
-    elif sfnp.case == "real":
-        alpim_qnt = [None]
+        alpim_qnt = np.asarray([sfnp.alpim_dist[i].ppf(q) for i in range(sfnp.r)])
+    else:
+        alpim_qnt = None
 
     return alpre_qnt, alpim_qnt
 

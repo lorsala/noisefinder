@@ -66,34 +66,57 @@ def ASDresidual_qnt(mfnp, q):
 
 
 def alpha_qnt(mfnp, q):
-    """Compute confidence intervals for the projected susceptibilities.
+    """Compute confidence intervals of the projected susceptibilities
+    for every frequency bin.
 
-    For each frequency in `mfnp`, computes the quantiles of the real
-    and imaginary parts of the susceptibilities estimated by noise
-    projection.
+    Bins where decorrelation was not possible (``mfnp.sfnp_arr[i] is None``)
+    are filled with ``nan``.
 
     Parameters
     ----------
     mfnp : noiseproj
-        Multi-frequency noise projection results, as returned by
-        :func:`NoiseProj`.
-    q : float
-        Lower-tail probability.
+        Multi-frequency noise projection results. ``mfnp.sfnp_arr`` holds
+        one ``noiseproj_onebin`` per bin, or ``None`` where ``navs == 0``.
+    q : float or array_like of float
+        Lower-tail probabilities, each in [0, 1].
 
     Returns
     -------
-    alpre_qnt : np.ndarray
-        Confidence intervals for the real part of the susceptibilities,
-        with shape ``(3, n_freqs)``.
-    alpim_qnt : np.ndarray
-        Confidence intervals for the imaginary part of the
-        susceptibilities, with shape ``(3, n_freqs)``.
+    alpre_qnt : np.ndarray, shape (nf, r, nq)
+        Quantiles of the real part, ``nan`` on invalid bins.
+    alpim_qnt : np.ndarray, shape (nf, r, nq), or None
+        Quantiles of the imaginary part, ``nan`` on invalid bins.
+        ``None`` if the projection is real-valued.
+
+    Raises
+    ------
+    ValueError
+        If no bin could be decorrelated.
     """
+    q = np.atleast_1d(q)
+    nq = q.size
+    nf = len(mfnp.sfnp_arr)
 
-    alp_qnt = [stats_onebin.alpha_onebin_qnt(sfnp, q) for sfnp in mfnp.sfnp_arr]
-    alpre_qnt, alpim_qnt = zip(*alp_qnt) if alp_qnt else ((), ())
+    valid = next((s for s in mfnp.sfnp_arr if s is not None), None)
+    if valid is None:
+        msg = "No frequency bin could be decorrelated."
+        raise ValueError(msg)
 
-    return np.asarray(alpre_qnt), np.asarray(alpim_qnt)
+    r = valid.r
+    is_complex = valid.case == "complex"
+
+    alpre_qnt = np.full((nf, r, nq), np.nan)
+    alpim_qnt = np.full((nf, r, nq), np.nan) if is_complex else None
+
+    for ffi, sfnp in enumerate(mfnp.sfnp_arr):
+        if sfnp is None:
+            continue
+        re_i, im_i = stats_onebin.alpha_onebin_qnt(sfnp, q)
+        alpre_qnt[ffi] = re_i
+        if is_complex:
+            alpim_qnt[ffi] = im_i
+
+    return alpre_qnt, alpim_qnt
 
 
 def R2contrib_qnt(mfnp, q):
