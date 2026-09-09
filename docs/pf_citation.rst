@@ -4,22 +4,26 @@ Citation
 If you use ``noisefinder`` in your research, please cite the associated
 paper, rather than the Zenodo repo:
 
-    Lorenzo Sala and Stefano Vitale, "Precision spectral estimation at
-    sub-Hz frequencies: Closed-form posteriors and Bayesian noise
-    projection", Physical Review D (2026).
-
-While the journal DOI is not yet available, you can cite the arXiv preprint:
+    Lorenzo Sala and Stefano Vitale, "Precision spectral estimation at sub-Hz
+    frequencies: Closed-form posteriors and Bayesian noise projection",
+    Phys. Rev. D 114, 062005 (2026). `doi:10.1103/hwmv-xt1k <https://doi.org/10.1103/hwmv-xt1k>`_
 
 .. code:: bibtex
 
-    @misc{precisionspectral,
-          title={Precision spectral estimation at sub-Hz frequencies: closed-form posteriors and Bayesian noise projection},
-          author={Lorenzo Sala and Stefano Vitale},
-          year={2025},
-          eprint={2507.20846},
-          archivePrefix={arXiv},
-          primaryClass={astro-ph.IM},
-          url={https://arxiv.org/abs/2507.20846},
+    @article{hwmv-xt1k,
+          title = {{Precision spectral estimation at sub-Hz frequencies: Closed-form posteriors and Bayesian noise projection}},
+          author = {Sala, Lorenzo and Vitale, Stefano},
+          journal = {Phys. Rev. D},
+          volume = {114},
+          issue = {6},
+          pages = {062005},
+          numpages = {16},
+          year = {2026},
+          month = {Sep},
+          publisher = {American Physical Society},
+          doi = {10.1103/hwmv-xt1k},
+          url = {https://link.aps.org/doi/10.1103/hwmv-xt1k}
+        }
     }
 
 See also the machine-readable citation metadata in

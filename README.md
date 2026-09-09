@@ -1,10 +1,10 @@
 # About noisefinder
 
 [![Doc badge](https://img.shields.io/badge/Docs-available-brightgreen)](https://lorsala.github.io/noisefinder/)
-[![DOI](https://img.shields.io/badge/Reference-10.48550/arXiv.2507.20846-blue)](https://doi.org/10.48550/arXiv.2507.20846)
+[![Phys. Rev. D 114, 062005](https://img.shields.io/badge/Phys.%20Rev.%20D-114%2C%20062005%20(2026)-%23004b87)](https://doi.org/10.1103/hwmv-xt1k)
 [![License badge](https://img.shields.io/badge/License-BSD-orange)](.)
 
-`noisefinder` is a python package for precise spectral estimation, and noise decorrelation. It derives from our work, which you can [find on arXiv](https://doi.org/10.48550/arXiv.2507.20846).\
+`noisefinder` is a python package for precise spectral estimation, and noise decorrelation. It derives from our work, which you [find here](https://doi.org/10.1103/hwmv-xt1k).\
 An initial version of this code has been used for the data analysis of the LISA Pathfinder mission [^1] [^2].
 
 `noisefinder` measures the spectral properties of time series. The precise Bayesian estimate is particularly relevant whenever the number of available averaging windows (*periodograms*) is very low, for instance at very-low frequencies. Moreover, it performs noise projection (timeseries decorrelation), allowing for precise retrieval of background noise in the presence of disturbing sources.
@@ -25,19 +25,24 @@ In particular, `noisefinder` allows to:
 
 ## Citation
 
-If you use this package in your research or project, please cite the [following paper]((https://doi.org/10.48550/arXiv.2507.20846)).\
-(this link will be substituted after peer review)
+If you use this package in your research or project, please cite the [following paper]((https://doi.org/10.1103/hwmv-xt1k)).
 
-```
-@misc{precisionspectral,
-      title={Precision spectral estimation at sub-Hz frequencies: closed-form posteriors and Bayesian noise projection}, 
-      author={Lorenzo Sala and Stefano Vitale},
-      year={2025},
-      eprint={2507.20846},
-      archivePrefix={arXiv},
-      primaryClass={astro-ph.IM},
-      url={https://arxiv.org/abs/2507.20846}, 
+```bibtex
+@article{hwmv-xt1k,
+  title = {{Precision spectral estimation at sub-Hz frequencies: Closed-form posteriors and Bayesian noise projection}},
+  author = {Sala, Lorenzo and Vitale, Stefano},
+  journal = {Phys. Rev. D},
+  volume = {114},
+  issue = {6},
+  pages = {062005},
+  numpages = {16},
+  year = {2026},
+  month = {Sep},
+  publisher = {American Physical Society},
+  doi = {10.1103/hwmv-xt1k},
+  url = {https://link.aps.org/doi/10.1103/hwmv-xt1k}
 }
+
 ```
 
 
