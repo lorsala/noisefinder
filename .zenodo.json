@@ -1,6 +1,6 @@
 {
   "upload_type": "software",
-  "title": "noisefinder",
+  "title": "Noisefinder - spectral estimation and noise decorrelation",
   "description": "<p><code>noisefinder</code> is a Python package for precise spectral estimation, and noise decorrelation. It derives from our work, available at <a href=\"https://doi.org/10.1103/hwmv-xt1k\">https://doi.org/10.1103/hwmv-xt1k</a></p>\n<p>An initial version of this code has been used for the data analysis of the LISA Pathfinder mission.</p>\n<p><code>noisefinder</code> measures the spectral properties of time series. The precise Bayesian estimate is particularly relevant whenever the number of available averaging windows (periodograms) is very low, for instance at very-low frequencies. Moreover, it performs noise projection (timeseries decorrelation), allowing for precise retrieval of background noise in the presence of disturbing sources.</p>\n<p>Documentation: <a href=\"https://lorsala.github.io/noisefinder/\">https://lorsala.github.io/noisefinder/</a></p>",
   "access_right": "open",
   "license": "bsd-3-clause",
