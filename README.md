@@ -4,7 +4,7 @@
 [![Phys. Rev. D 114, 062005](https://img.shields.io/badge/Phys.%20Rev.%20D-114%2C%20062005%20(2026)-%23004b87)](https://doi.org/10.1103/hwmv-xt1k)
 [![License badge](https://img.shields.io/badge/License-BSD-orange)](.)
 
-`noisefinder` is a python package for precise spectral estimation, and noise decorrelation. It derives from our work, which you [find here](https://doi.org/10.1103/hwmv-xt1k).\
+`noisefinder` is a Python package for precise spectral estimation, and noise decorrelation. It derives from our work, available at [doi.org/10.1103/hwmv-xt1k](https://doi.org/10.1103/hwmv-xt1k).\
 An initial version of this code has been used for the data analysis of the LISA Pathfinder mission [^1] [^2].
 
 `noisefinder` measures the spectral properties of time series. The precise Bayesian estimate is particularly relevant whenever the number of available averaging windows (*periodograms*) is very low, for instance at very-low frequencies. Moreover, it performs noise projection (timeseries decorrelation), allowing for precise retrieval of background noise in the presence of disturbing sources.
