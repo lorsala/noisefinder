@@ -67,7 +67,7 @@ def _run_noiseproj_onebin(CPSDmat: np.ndarray, navs: float, case="complex"):
         raise ValueError(msg)
     if not navs > r:
         warnings.warn(
-            f"Number of averages must be greater than number of time series. navs={navs}, r={r}. Can't decorrelate this one.",
+            f"The given array contains a frequency with navs={navs}, r={r}. Can not decorrelate it. Continuing.",
             UserWarning,
         )
         sfnp = None
