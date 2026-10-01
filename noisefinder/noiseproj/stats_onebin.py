@@ -46,7 +46,7 @@ def PSDresidual_onebin_RVS(sfnp, size):
     return PSDres_rvs
 
 
-def alpha_onebin_RVS(sfnp, size):
+def alpha_onebin_RVS(sfnp, size, random_state=None):
     """Draw random samples from the susceptibilities distribution.
 
     Samples from the joint (multivariate Student-t) posterior of the
@@ -63,6 +63,10 @@ def alpha_onebin_RVS(sfnp, size):
         :func:`noiseproj_onebin._run_noiseproj_onebin`.
     size : int
         Number of samples to draw. Must be a positive integer.
+    random_state : {None, int, numpy.random.Generator, numpy.random.RandomState}, optional
+        Seed or random state for reproducible sampling, forwarded as-is
+        to ``scipy.stats``. Default ``None`` uses the global random
+        state (non-reproducible).
 
     Returns
     -------
@@ -89,7 +93,7 @@ def alpha_onebin_RVS(sfnp, size):
 
     # scipy squeezes the output of multivariate_t.rvs (size=1 or dim=1),
     # so reshape to a consistent (size, dim) layout.
-    rvs = sfnp.alphasmultivar_dist.rvs(size=size)
+    rvs = sfnp.alphasmultivar_dist.rvs(size=size, random_state=random_state)
     rvs = np.reshape(rvs, (size, -1))
 
     if sfnp.case == "real":

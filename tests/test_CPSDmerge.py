@@ -8,7 +8,7 @@ from noisefinder.specwindows import BH92
  
 def test_cpsd_merge():
 
-	data = stats.norm.rvs(size=50000)
+	data = stats.norm.rvs(size=50000, random_state=0)
 	Lmax = 10005
 	fs=10
 

@@ -14,7 +14,7 @@ from noisefinder.specwindows import BH92
 @pytest.mark.parametrize("optimalolap", [True, False])
 def test_psd_lpf_matches_wosa_firstfreq(Lmax, fs, optimalolap):
 
-	dataA = stats.norm.rvs(size=200000)
+	dataA = stats.norm.rvs(size=200000, random_state=0)
 
 	wosa_freqscheme = wosaScheme(nperseg=Lmax,fs=fs,win=BH92,optimalolap=optimalolap)
 	wosa_ref = CPSDevaluate(

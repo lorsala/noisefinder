@@ -13,7 +13,7 @@ from noisefinder.specwindows import BH92
 @pytest.mark.parametrize("fs", [4, 6.54])
 def test_psd_wosa_matches_scipy_welch(nperseg, fs):
 
-	dataA = stats.norm.rvs(size=200000)
+	dataA = stats.norm.rvs(size=200000, random_state=0)
 
 	f_ref, pxx_ref = signal.welch(
 		dataA,
@@ -53,8 +53,8 @@ def test_psd_wosa_matches_scipy_welch(nperseg, fs):
 @pytest.mark.parametrize("nperseg", [100000, 59847])
 @pytest.mark.parametrize("fs", [4, 6.54])
 def test_csd_wosa_matches_scipy_welch(nperseg, fs):
-	dataA = stats.norm.rvs(size=200000)
-	dataB = stats.norm.rvs(size=200000)
+	dataA = stats.norm.rvs(size=200000, random_state=0)
+	dataB = stats.norm.rvs(size=200000, random_state=1)
 
 	f_ref, cxx_ref = signal.csd(
 		dataA,dataB,
@@ -93,7 +93,7 @@ def test_csd_wosa_matches_scipy_welch(nperseg, fs):
 
 def test_psd_wosa_optimalolap_test():
 
-	dataA = stats.norm.rvs(size=50000)
+	dataA = stats.norm.rvs(size=50000, random_state=0)
 
 	nperseg = 10000
 	fs = 8.56

@@ -119,7 +119,7 @@ def alpha_qnt(mfnp, q):
     return alpre_qnt, alpim_qnt
 
 
-def alpha_RVS(mfnp, size):
+def alpha_RVS(mfnp, size, random_state=None):
     """Draw random samples of the susceptibilities for every frequency bin.
 
     For each bin, samples from the joint posterior of the
@@ -136,6 +136,12 @@ def alpha_RVS(mfnp, size):
     size : int
         Number of samples to draw per frequency bin. Must be a positive
         integer.
+    random_state : {None, int, numpy.random.Generator, numpy.random.RandomState}, optional
+        Seed or random state for reproducible sampling. Converted once
+        to a ``numpy.random.Generator`` and consumed across bins, so
+        bins get independent samples while the whole call stays
+        reproducible for a given seed. Default ``None`` uses the
+        global random state (non-reproducible).
 
     Returns
     -------
@@ -166,11 +172,13 @@ def alpha_RVS(mfnp, size):
     else:
         dtype, fill = float, np.nan
 
+    rng = np.random.default_rng(random_state)
+
     alphas_rvs = np.full((nf, size, r), fill, dtype=dtype)
     for ffi, sfnp in enumerate(mfnp.sfnp_arr):
         if sfnp is None:
             continue
-        alphas_rvs[ffi] = stats_onebin.alpha_onebin_RVS(sfnp, size)
+        alphas_rvs[ffi] = stats_onebin.alpha_onebin_RVS(sfnp, size, random_state=rng)
 
     return alphas_rvs
 

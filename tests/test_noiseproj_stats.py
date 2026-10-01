@@ -12,8 +12,8 @@ def test_cpsd_posteriors_testexec():
 	Just test execution.
 	"""
 
-	dataA = scipy.stats.norm.rvs(size=1000)
-	dataB = scipy.stats.norm.rvs(size=1000)
+	dataA = scipy.stats.norm.rvs(size=1000, random_state=0)
+	dataB = scipy.stats.norm.rvs(size=1000, random_state=1)
 
 	LPFfreqscheme = lpfScheme(Lmax=200,fmax=1e-1,fs=10,optimalolap=True)
 

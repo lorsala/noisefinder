@@ -8,8 +8,8 @@ from noisefinder.specwindows import BH92
 
  
 def test_noiseproj():
-	datares = stats.norm.rvs(size=50000)
-	dataB = stats.norm.rvs(size=50000)
+	datares = stats.norm.rvs(size=50000, random_state=0)
+	dataB = stats.norm.rvs(size=50000, random_state=1)
 	dataA = datares + 0.1*dataB
 
 	Lmax = 10005
