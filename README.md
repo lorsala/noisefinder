@@ -1,5 +1,6 @@
 # About noisefinder
 
+[![GitHub badge](https://img.shields.io/badge/GitHub-repository-181717?logo=github)](https://github.com/lorsala/noisefinder)
 [![Doc badge](https://img.shields.io/badge/Docs-available-brightgreen)](https://lorsala.github.io/noisefinder/)
 [![Phys. Rev. D 114, 062005](https://img.shields.io/badge/Phys.%20Rev.%20D-114%2C%20062005%20(2026)-%23004b87)](https://doi.org/10.1103/hwmv-xt1k)
 [![License badge](https://img.shields.io/badge/License-BSD-orange)](.)

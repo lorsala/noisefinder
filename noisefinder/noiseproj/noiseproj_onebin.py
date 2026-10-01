@@ -75,7 +75,6 @@ def _run_noiseproj_onebin(CPSDmat: np.ndarray, navs: float, case="complex"):
 
     # distinguish real and complex methods
     if case == "real":
-        CPSDmat = np.real(CPSDmat)
         sfnp = _ExecuteNoiseProjectionReal(CPSDmat=CPSDmat, navs=navs, r=r, case=case)
     elif case == "complex":
         sfnp = _ExecuteNoiseProjectionComplex(CPSDmat=CPSDmat, navs=navs, r=r, case=case)
@@ -147,7 +146,7 @@ def _ExecuteNoiseProjectionReal(CPSDmat, navs, r, case):
         msg = "Value of r is inconsistent with CPSD dimension."
         raise ValueError(msg)
 
-
+    CPSDmat = np.real(CPSDmat)
     schur = np.real(1 / np.linalg.inv(CPSDmat)[0, 0])
     A = CPSDmat * navs
     A1y = A[0, 1:]
@@ -281,7 +280,10 @@ class NoiseProjSfResults:
     """Frozen `scipy.stats` distributions of the imaginary part of
         each susceptibility, one per susceptibility (length `r`).
         Only meaningful when `case` is ``"complex"``."""
-    alphasmultivar_dist: list[Any]
-    """Frozen `scipy.stats` multivariate distribution of the
-        susceptibilities, jointly."""
+    alphasmultivar_dist: Any
+    """Frozen `scipy.stats.multivariate_t` distribution of the
+        susceptibilities, jointly. Dimension `r` if `case` is
+        ``"real"``; dimension ``2 r`` (real parts followed by imaginary
+        parts) if `case` is ``"complex"``. To draw samples, use
+        :func:`stats_onebin.alpha_onebin_RVS`."""
 

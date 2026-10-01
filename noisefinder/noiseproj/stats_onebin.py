@@ -49,42 +49,65 @@ def PSDresidual_onebin_RVS(sfnp, size):
 def alpha_onebin_RVS(sfnp, size):
     """Draw random samples from the susceptibilities distribution.
 
-    For the real case, samples directly from the multivariate
-    distribution. For the complex case, samples the real and
-    imaginary parts jointly (stacked as a real Student-t multivariate)
-    and recombines them into complex susceptibilities.
+    Samples from the joint (multivariate Student-t) posterior of the
+    susceptibilities, ``sfnp.alphasmultivar_dist``. For the real case,
+    samples are returned as they are. For the complex case, the real
+    and imaginary parts are sampled jointly (stacked as a real
+    multivariate Student-t of dimension ``2 r``) and recombined into
+    complex susceptibilities.
 
     Parameters
     ----------
-    sfnp : noiseproj_onebin
+    sfnp : noiseproj_onebin.NoiseProjSfResults
         Single-frequency noise projection results, as returned by
-        :func:`NoiseProjSf`.
+        :func:`noiseproj_onebin._run_noiseproj_onebin`.
     size : int
-        Number of samples to draw.
+        Number of samples to draw. Must be a positive integer.
 
     Returns
     -------
     np.ndarray
-        Random samples of the susceptibilities, with shape
-        ``(size, r)``. Complex-valued if `sfnp.case` is
-        ``"complex"``, real-valued otherwise.
+        Random samples of the susceptibilities, always with shape
+        ``(size, r)`` (also for ``size == 1`` or ``r == 1``).
+        Complex-valued if `sfnp.case` is ``"complex"``, real-valued
+        otherwise.
 
     Raises
     ------
     ValueError
         If `sfnp` is ``None`` (i.e. decorrelation was not possible
         because the number of averages was not greater than the
-        number of timeseries).
+        number of timeseries), if `size` is not positive, or if
+        `sfnp.case` is not ``"real"`` or ``"complex"``.
+    TypeError
+        If `size` is not an integer.
     """
     if sfnp is None:
         raise ValueError("Number of averages must be greater than number of ts.")
 
+    _check_size(size)
+
+    # scipy squeezes the output of multivariate_t.rvs (size=1 or dim=1),
+    # so reshape to a consistent (size, dim) layout.
+    rvs = sfnp.alphasmultivar_dist.rvs(size=size)
+    rvs = np.reshape(rvs, (size, -1))
+
     if sfnp.case == "real":
-        alphas_rvs = sfnp.alphasmultivar_dist.rvs(size=size)
+        alphas_rvs = rvs
     elif sfnp.case == "complex":
-        realrvsStud = sfnp.alphasmultivar_dist.rvs(size=size)
-        alphas_rvs = realrvsStud[:, : sfnp.r] + 1.0j * realrvsStud[:, sfnp.r :]
+        alphas_rvs = rvs[:, : sfnp.r] + 1.0j * rvs[:, sfnp.r :]
+    else:
+        raise ValueError(f"'case' must be 'real' or 'complex', got {sfnp.case!r}")
+
     return alphas_rvs
+
+
+def _check_size(size):
+    """Validate the number of samples requested to an RVS function."""
+    if not isinstance(size, numbers.Integral) or isinstance(size, bool):
+        raise TypeError(f"'size' must be an integer, got {type(size).__name__}")
+    if size <= 0:
+        raise ValueError(f"'size' must be positive, got {size}")
 
 
 def PSDresidual_onebin_qnt(sfnp, q):

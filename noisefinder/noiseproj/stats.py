@@ -119,6 +119,62 @@ def alpha_qnt(mfnp, q):
     return alpre_qnt, alpim_qnt
 
 
+def alpha_RVS(mfnp, size):
+    """Draw random samples of the susceptibilities for every frequency bin.
+
+    For each bin, samples from the joint posterior of the
+    susceptibilities (see :func:`stats_onebin.alpha_onebin_RVS`).
+    Samples of different bins are independent. Bins where
+    decorrelation was not possible (``mfnp.sfnp_arr[i] is None``) are
+    filled with ``nan``.
+
+    Parameters
+    ----------
+    mfnp : noiseproj.NoiseProjResults
+        Multi-frequency noise projection results, as returned by
+        :func:`run_noiseproj`.
+    size : int
+        Number of samples to draw per frequency bin. Must be a positive
+        integer.
+
+    Returns
+    -------
+    np.ndarray
+        Samples of the susceptibilities, with shape ``(nf, size, r)``.
+        Complex-valued if the projection is complex, real-valued
+        otherwise. ``nan`` on invalid bins.
+
+    Raises
+    ------
+    ValueError
+        If no bin could be decorrelated, or if `size` is not positive.
+    TypeError
+        If `size` is not an integer.
+    """
+    stats_onebin._check_size(size)
+
+    nf = len(mfnp.sfnp_arr)
+
+    valid = next((s for s in mfnp.sfnp_arr if s is not None), None)
+    if valid is None:
+        msg = "No frequency bin could be decorrelated."
+        raise ValueError(msg)
+
+    r = valid.r
+    if valid.case == "complex":
+        dtype, fill = complex, complex(np.nan, np.nan)
+    else:
+        dtype, fill = float, np.nan
+
+    alphas_rvs = np.full((nf, size, r), fill, dtype=dtype)
+    for ffi, sfnp in enumerate(mfnp.sfnp_arr):
+        if sfnp is None:
+            continue
+        alphas_rvs[ffi] = stats_onebin.alpha_onebin_RVS(sfnp, size)
+
+    return alphas_rvs
+
+
 def R2contrib_qnt(mfnp, q):
     """Compute confidence intervals for the R2 contribution.
 

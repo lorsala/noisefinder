@@ -19,8 +19,9 @@
    :caption: User Guide
 
    pf_install
-   pf_howtouse
-   pf_howtouse_decorr
+   pf_examples
+   CPSD tutorial (notebook) <examples/pf_howtouse>
+   Decorrelation tutorial (notebook) <examples/pf_howtouse_decorr>
    Additional notes <pf_notes_specestimation>
 
 

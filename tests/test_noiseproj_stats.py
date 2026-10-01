@@ -28,3 +28,4 @@ def test_cpsd_posteriors_testexec():
 	noiseproj.stats.PSDresidual_qnt(mfnp,q=0.50)
 	noiseproj.stats.R2contrib_qnt(mfnp,q=0.50)
 	noiseproj.stats.alpha_qnt(mfnp,q=0.50)
+	noiseproj.stats.alpha_RVS(mfnp,size=10)

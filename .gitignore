@@ -70,6 +70,7 @@ instance/
 
 # Sphinx documentation
 docs/_build/
+docs/examples/  # auto-generated at build time from ../examples/, see docs/conf.py
 
 # PyBuilder
 .pybuilder/
